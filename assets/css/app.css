@@ -1,0 +1,144 @@
+
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* This file is for your main application CSS */
+
+.error {
+    text-decoration: red wavy;
+    color: red;
+  }
+
+
+#typing-area span.correct {
+  /* Style for correctly typed characters */
+  color:greenyellow;
+}
+
+#typing-area span.current {
+  /* Style for the current character */
+  text-decoration: underline;
+}
+
+#typing-area span.remaining {
+  /* Style for remaining characters */color: grey;
+}
+
+.current {
+  text-decoration: underline;
+  color: blue; /* or any color to highlight the current character */
+}
+
+.remaining {
+  color: black; /* style for the remaining characters */
+}
+@keyframes blink {
+  0%, 100% { border-left-color: black; }
+  50% { border-left-color: transparent; }
+}
+
+.cursor-position {
+  border-left: 1px solid black;
+  margin-left: -2px;
+  padding-left: 1px;
+  
+}
+.buttonly {
+  background-color: #1ab91f; /* Green background */
+  border: none; /* Remove borders */
+  color: white; /* White text */
+  padding: 7px 16px; /* Padding */
+  text-align: center; /* Centered text */
+  text-decoration: none; /* No underline */
+  display: inline-block; /* Inline-block */
+  font-size: 16px; /* Text size */
+  margin: 4px 2px; /* Margins */
+  cursor: pointer; /* Pointer cursor on hover */
+  border-radius: 8px; /* Rounded corners */
+}
+
+.buttonly:disabled {
+  background-color: #ccc; /* Gray background for disabled state */
+  cursor: not-allowed; /* Not-allowed cursor on hover for disabled state */
+}
+/* Base styles for main container to ensure it covers the full screen */
+main {
+  width: 100%;
+  min-height: 100vh; /* Cover the full viewport height */
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition for dark mode */
+}
+
+/* Dark mode styles applied to main container */
+.dark-mode {
+  background-color: #121212;
+  color: #b43939;
+}
+
+/* Ensuring all nested elements within the dark-mode container adopt the intended styles */
+.dark-mode, .dark-mode button, .dark-mode .buttonly, .dark-mode .dark-mode-toggle {
+  background-color: #333;
+  color: #fff;
+}
+
+.dark-mode .dark-mode-toggle {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.dark-mode .dark-mode-toggle:hover {
+  background-color: #e0e0e0;
+}
+
+/* Dark mode styles */
+.dark-mode {
+  width: 100%;
+  min-height: 100vh; /* Cover the full viewport height */
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition for dark mode */
+
+  background-color: #121212;
+  color: #b43939;
+  
+}
+
+.dark-mode button,
+.dark-mode .buttonly {
+  background-color: #333;
+  color: #fff;
+}
+
+.dark-mode .dark-mode-toggle {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.dark-mode .dark-mode-toggle:hover {
+  background-color: #e0e0e0;
+}
+
+
+.dark-mode button {
+  background-color: #333;
+  color: #fff;
+}
+/* Add this to your app.css */
+.dark-mode-toggle {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #f0f0f0;
+  color: #333;
+  text-align: center;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.dark-mode-toggle:hover {
+  background-color: #e0e0e0;
+}
+
+
