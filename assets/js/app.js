@@ -64,9 +64,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Split the phrases into arrays of characters
     const phraseChars = Array.from(phrase);
     const userInputChars = Array.from(userInput);
-    const jsTypingArea = document.getElementById('js-typing-area');
-    if (!jsTypingArea) return;
- // Build the HTML content with span tags for styling
+    // const jsTypingArea = document.getElementById('js-typing-area');
+
+    // Find the <code> tag within the jsTypingArea
+    const codeElement = document.querySelector('#js-typing-area code');
+    if (!codeElement) return;
+    // if (!jsTypingArea) return;
+    // Build the HTML content with span tags for styling
     let htmlContent = phraseChars.map((char, index) => {
     const userChar = userInputChars[index];
     let classList = [];
@@ -96,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return `<span class="${classList.join(' ')}">${displayChar}</span>`;
     }).join('');
   
-  jsTypingArea.innerHTML = htmlContent;
+  codeElement.innerHTML = htmlContent;
   }
 // Function to update the timer display smoothly
 function updateTimer() {
@@ -142,25 +146,51 @@ function stopTimer() {
   }
 }
 
-// Listen for cursor position changes without input changes (e.g., arrow keys, mouse click)
-userInputField.addEventListener('click', () => updateJSTypingArea(document.getElementById('js-typing-area').getAttribute('data-phrase'), userInputField.value));
-userInputField.addEventListener('keyup', (event) => {
-  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Home' || event.key === 'End') {
-    updateJSTypingArea(document.getElementById('js-typing-area').getAttribute('data-phrase'), userInputField.value);
-  }
-});
+const updateFunction = () => {
+  const codeElement = document.querySelector('#js-typing-area code');
+  if (codeElement) {
+    const phrase = codeElement.getAttribute('data-phrase');
+    if(phrase){updateJSTypingArea(phrase, userInputField.value);
+    }else{console.error('data-phrase not found! '+ codeElement.getAttribute());}
 
+    
+  } else {
+    console.error('Code element not found!');
+  }
+};
+
+
+
+
+  // Listen for cursor position changes without input changes (e.g., arrow keys, mouse click)
+  userInputField.addEventListener('click', updateFunction);
+
+  userInputField.addEventListener('keyup', (event) => {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Home' || event.key === 'End') {
+      updateFunction();
+    }
+  });
+    // Listen for input changes
 userInputField.addEventListener('input', (event) => {
   const userInput = event.target.value.trim();
-  const phrase = document.getElementById('js-typing-area').getAttribute('data-phrase').trim();
+  const codeElement = document.querySelector('#js-typing-area code');
+  
+  if (codeElement) {
+    const phrase = codeElement.getAttribute('data-phrase').trim();
+    updateJSTypingArea(phrase, userInput);
 
-  updateJSTypingArea(phrase, userInput);
-  if (userInput.localeCompare(phrase, undefined, { sensitivity: 'base' }) === 0) {
-    stopTimer();
-  } else if (!timerStarted && userInput.length > 0) {
-    startTimer();
+    if (userInput.localeCompare(phrase, undefined, { sensitivity: 'base' }) === 0) {
+      stopTimer();
+    } else if (!timerStarted && userInput.length > 0) {
+      startTimer();
+    }
+  } else {
+    console.error('Code element not found!');
   }
 });
+});
+
+
 function darkExpected() {
   return localStorage.theme === 'dark' || (!('theme' in localStorage) &&
     window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -178,8 +208,7 @@ window.addEventListener("toogle-darkmode", e => {
   initDarkMode();
 })
 
-initDarkMode();
-});
+
 
 window.liveSocket = liveSocket
 

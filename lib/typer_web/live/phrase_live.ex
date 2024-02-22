@@ -76,7 +76,7 @@ def render(assigns) do
 
     <div phx-update="ignore" id="js-text-area">
     <div id="js-timer">READY</div>
-    <div id="js-typing-area" class="typing-area" data-phrase={@phrase.text}></div>
+    <div id="js-typing-area" class="typing-area"><pre><code data-phrase={@phrase.text}></code></pre></div>
     </div>
 
 
