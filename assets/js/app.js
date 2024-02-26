@@ -26,7 +26,7 @@ let Hooks = {};
 Hooks.AutoFocus = {
   mounted() {
     this.el.focus();
-    //this.pushEvent("process_input", { key: this.el.innerHTML });
+    //this.pushEvent("process_input", { key: this.el.innerHTML });11ss22srrraaassssssrr
     
     
   },
@@ -50,7 +50,7 @@ liveSocket.connect()
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
-// >> liveSocket.disableLatencySim()
+// >> liveSocket.disableLatencySim()❀, ✿, ❁, ✾★, ☆, ✪, ✹✖┼☓▄'█'‽
 
 // Initialize the JS managed area after the document is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -64,51 +64,61 @@ document.addEventListener('DOMContentLoaded', () => {
   const lines = phraseText.split('\n'); // For lines
   if (!userInputField) return;
   function updateJSTypingArea(phrase, userInput) {
-    const codeElement = document.querySelector('#js-typing-area');
-    if (!codeElement) return;
-  
-    const phraseLines = phrase.split('\n'); // Split phrase into lines
-    const userInputLines = userInput.split('\n'); // Split user input into lines
-    let htmlContent = '';
-  
-    // Process each line
-    phraseLines.forEach((line, lineIndex) => {
-      const phraseChars = Array.from(line || ''); // Convert current line to characters
-      const userInputChars = Array.from(userInputLines[lineIndex] || ''); // Safely handle undefined lines
-      let lineHtmlContent = '';
-  
-      phraseChars.forEach((char, charIndex) => {
-        let displayChar = char === ' ' ? '&nbsp;' : char; // Handle spaces
-        let classList = ['ghost-text']; // Default class for untyped text
-  
-        if (charIndex < userInputChars.length) {
-          const userChar = userInputChars[charIndex];
-          if (userChar === char) {
-            classList = ['correct']; // Correct input
-          } else {
-            classList = ['error']; // Incorrect input ❀, ✿, ❁, ✾★, ☆, ✪, ✹✖┼☓▄'█'‽
-            displayChar = userChar === ' ' ? '&nbsp;' : userChar; // Display user's incorrect input
-          }
+  const codeElement = document.querySelector('#js-typing-area');
+  if (!codeElement) return;
+
+  const phraseLines = phrase.split('\n'); // Split the phrase into lines
+  const userInputLines = userInput.split('\n'); // Split the user input into lines
+  let htmlContent = '';
+
+  phraseLines.forEach((phraseLine, lineIndex) => {
+    const userInputLine = userInputLines[lineIndex] || '';
+    let lineHtmlContent = '';
+    let wordHtmlContent = '';
+
+    // Iterate through each character of the phrase line
+    for (let i = 0; i <= phraseLine.length; i++) {
+      const phraseChar = phraseLine[i] || ' '; // Handle end of line by adding a space for splitting
+      const userInputChar = userInputLine[i];
+      let classList = ['ghost-text']; // Default class for characters not yet typed by the user
+      let displayChar = phraseChar; // Display the character from the phrase
+
+      if (userInputChar !== undefined) {
+        if (phraseChar === userInputChar) {
+          classList = ['correct']; // Correct input
+          
+        } else {
+          classList = ['error']; // Incorrect input
+          displayChar = userInputChar === ' ' ? '▄' : userInputChar; // Show underscore for error spaces
+          //displayChar = displayChar === ' ' ? '▄' : displayChar;
         }
-  
-        lineHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;
-      });//arssssrrss2t
-  
-      // Handle extra characters typed by the user beyond the expected length of the line
-      if (userInputChars.length > phraseChars.length) {
-        const extraChars = userInputChars.slice(phraseChars.length);
-        extraChars.forEach(char => {
-          const displayChar = char === ' ' ? '&nbsp;' : char; // Handle spaces
-          lineHtmlContent += `<span class="error">${displayChar}</span>`; // Mark extra input as incorrect
-        });
       }
-  
-      // Wrap each line of content in a div for proper line breaks
-      htmlContent += `<div>${lineHtmlContent}</div>`;
-    });
-  
-    codeElement.innerHTML = htmlContent; // Update the code element with the new HTML content
-  }
+      // Handle whitespace specially to ensure it's visible in HTML
+      displayChar = displayChar === ' ' ? '&nbsp;' : displayChar;
+      wordHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;
+      }
+
+      // Add remaining wordHtmlContent to lineHtmlContent (handles case where line ends without space)
+      lineHtmlContent += `<span class="word">${wordHtmlContent}</span>`;
+
+
+    // Handle extra characters typed by the user beyond the current line of the phrase
+    if (userInputLine.length > phraseLine.length) {
+      const extraChars = userInputLine.slice(phraseLine.length);
+      Array.from(extraChars).forEach(char => {
+        const displayChar = char === ' ' ? '&nbsp;' : char; // Handle spaces
+        lineHtmlContent += `<span class="error">${displayChar}</span>`; // Mark extra input as incorrect
+      });
+    }
+
+    // Wrap the line content in a div for proper formatting
+    htmlContent += `<div class="line">${lineHtmlContent}</div>`;
+  });
+
+  // Update the code element with the new HTML content
+  codeElement.innerHTML = htmlContent;
+}
+
   // function updateJSTypingArea(phrase, userInput) {
   //   const codeElement = document.querySelector('#js-typing-area');
   //   if (!codeElement) return;

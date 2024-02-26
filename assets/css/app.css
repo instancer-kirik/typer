@@ -155,11 +155,45 @@ main {
 .incorrect {
   color: #f00; /* Red for errors */
 }
-#js-typing-area {
-  white-space: pre-wrap; /* Allows text to wrap and preserves whitespace */
-  word-wrap: break-word; /* Older browsers */
-  overflow-wrap: break-word; /* Standard: breaks long words if necessary to fit */
-  width: 100%; /* Adjust as necessary */
-  max-width: 400px; /* Or the maximum width you want */
-  /* Additional styling as needed */
+.typing-area {
+  word-wrap: normal;
+  word-break: normal;
+  white-space: normal;
+  display: block;
+  height: auto;
+  margin: 3px auto;
+  line-height: 1.4;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  font-family: monospace; /* Ensure consistent font */
+  font-size: 16px; /* Ensure consistent font size */
+  width: 100%; /* Fill the container width */
+  max-width: 400px; /* Adjust based on your design */
+  padding: 8px; /* Match the padding of the textarea */
+  /* line-height: inherit; Inherit line height from parent or set explicitly */
+  position: relative; /* Positioned relative to its normal position */
+  z-index: 1; /* Ensure it's below the input textarea */
+}
+pre code {
+  white-space: pre-wrap; /* Allow long lines to wrap */
+  word-wrap: break-word; /* Ensure words can break and wrap to the next line */
+  overflow-wrap: break-word; /* Similar to word-wrap, for better compatibility */
+}
+#code-editor {
+  
+  /* opacity: 0; Make textarea completely transparent */
+  background-color: transparent;
+  border: none;
+  z-index: 2; /* Ensure it's above the ghost text */
+  resize: none; /* Disable resizing */
+  overflow: hidden; /* Hide scrollbar */
+  font-family: monospace; /* Match the font family */
+  font-size: 16px; /* Match the font size */
+  padding: 8px; /* Ensure padding matches */
+}
+#js-typing-area .word {
+  /* Example styles */
+  display: inline-block; /* Treat words as inline blocks to manage spacing and wrapping */
+   /* margin-right: 0.25em;Adjust spacing between words */
+  /* Add any other word-specific styles here */
 }

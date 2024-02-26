@@ -58,24 +58,25 @@ defmodule TyperWeb.PhraseLive do
 def render(assigns) do
   elapsed = elapsed_time(assigns.start_time, assigns.end_time)
   assigns = assign(assigns, :elapsed, elapsed)
-  #is_completed = assigns.user_input == assigns.phrase.text
+  #is_completed = assigns.user_input == assigns.phrase.textssrs
   ~H"""
-  <form phx-change="input" phx-submit="submit">
-  <pre><code><textarea id="code-editor" name="user_input" phx-hook="HandleEnter" phx-debounce="1000"></textarea></code></pre>
+  <form class="typing-area" phx-change="input" phx-submit="submit">
+  <pre><code><textarea class="typing-area" id="code-editor" name="user_input" phx-debounce="1000"></textarea></code></pre>
 
     </form>
   <!-- JavaScript Managed Area  -->
     <div id="phrase-data" data-phrase-text={@phrase.text}></div>
-    <div phx-update="ignore" id="js-text-area">
+    <div  phx-update="ignore" id="js-text-area">
     <div id="js-timer">READY</div>
-    <pre><code id="js-typing-area" class="typing-area" data-phrase={@phrase.text}>
+    <pre class = "typing-area">
+    <code class="typing-area" id="js-typing-area"  data-phrase={@phrase.text}>
       <!-- Your code snippet here. If the text "aa" is meant to be the phrase, ensure it's placed correctly. -->
 
     </code></pre>
     </div>
 
   <div id="typing-area">
-    <pre><code><%= render_typing_area(@phrase, @user_input) %></code></pre>
+    <pre class="typing-area2"><code ><%= render_typing_area(@phrase, @user_input) %></code></pre>
   </div>
 
   """
@@ -120,7 +121,7 @@ def render(assigns) do
     # Example:
     phrase_graphemes = String.graphemes(phrase_line)
     input_graphemes = String.graphemes(user_input_line)
-    IO.inspect( input_graphemes, label: "rendering ");
+    IO.inspect( phrase_graphemes, label: "rendering ");
     Enum.with_index(phrase_graphemes)
     |> Enum.map(fn {char, index} ->
       user_char = Enum.at(input_graphemes, index)
