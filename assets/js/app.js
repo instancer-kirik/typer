@@ -26,11 +26,15 @@ let Hooks = {};
 Hooks.AutoFocus = {
   mounted() {
     this.el.focus();
+    //this.pushEvent("process_input", { key: this.el.innerHTML });
+    
+    
   },
   updated() {
     this.el.focus();
   }
 };
+
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {params: {_csrf_token: csrfToken}, hooks: Hooks})
@@ -55,53 +59,148 @@ document.addEventListener('DOMContentLoaded', () => {
   let timerInterval;
   let animationFrameId;
   let timerStarted = false;
-  const userInputField = document.getElementById('user_input');
+  const userInputField = document.getElementById('code-editor');
+  const phraseText = document.getElementById("phrase-data").dataset.phraseText;
+  const lines = phraseText.split('\n'); // For lines
   if (!userInputField) return;
-  
-
   function updateJSTypingArea(phrase, userInput) {
-    const cursorPosition = userInputField.selectionStart;
-    // Split the phrases into arrays of characters
-    const phraseChars = Array.from(phrase);
-    const userInputChars = Array.from(userInput);
-    // const jsTypingArea = document.getElementById('js-typing-area');
-
-    // Find the <code> tag within the jsTypingArea
-    const codeElement = document.querySelector('#js-typing-area code');
+    const codeElement = document.querySelector('#js-typing-area');
     if (!codeElement) return;
-    // if (!jsTypingArea) return;
-    // Build the HTML content with span tags for styling
-    let htmlContent = phraseChars.map((char, index) => {
-    const userChar = userInputChars[index];
-    let classList = [];
-    let displayChar = char; // Display the actual character by default
-
-    // Highlight errors: if user input is present and does not match the phrase at this position
-    if (userChar !== undefined && userChar !== char) {
-      classList.push('error');
-      // Use a placeholder for space if it's an error
-      if (char === ' ') {
-        displayChar = '␣'; // Placeholder for space errors
-      }
-    }
-
-   // Highlight the current position in the phrase without altering the space character
-    if (index === userInput.length) {
-      classList.push('current');
-    }     
-    if (index === cursorPosition) {
-      classList.push('cursor-position'); // Apply cursor class at the current position
-    }
-   // For correct or future spaces, ensure they are displayed normally
-    if (char === ' ' && (!userChar || userChar === char)) {
-      displayChar = '&nbsp;'; // Use HTML entity for space to ensure it's visible
-    }
-    
-    return `<span class="${classList.join(' ')}">${displayChar}</span>`;
-    }).join('');
   
-  codeElement.innerHTML = htmlContent;
+    const phraseLines = phrase.split('\n'); // Split phrase into lines
+    const userInputLines = userInput.split('\n'); // Split user input into lines
+    let htmlContent = '';
+  
+    // Process each line
+    phraseLines.forEach((line, lineIndex) => {
+      const phraseChars = Array.from(line || ''); // Convert current line to characters
+      const userInputChars = Array.from(userInputLines[lineIndex] || ''); // Safely handle undefined lines
+      let lineHtmlContent = '';
+  
+      phraseChars.forEach((char, charIndex) => {
+        let displayChar = char === ' ' ? '&nbsp;' : char; // Handle spaces
+        let classList = ['ghost-text']; // Default class for untyped text
+  
+        if (charIndex < userInputChars.length) {
+          const userChar = userInputChars[charIndex];
+          if (userChar === char) {
+            classList = ['correct']; // Correct input
+          } else {
+            classList = ['error']; // Incorrect input ❀, ✿, ❁, ✾★, ☆, ✪, ✹✖┼☓▄'█'‽
+            displayChar = userChar === ' ' ? '&nbsp;' : userChar; // Display user's incorrect input
+          }
+        }
+  
+        lineHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;
+      });//arssssrrss2t
+  
+      // Handle extra characters typed by the user beyond the expected length of the line
+      if (userInputChars.length > phraseChars.length) {
+        const extraChars = userInputChars.slice(phraseChars.length);
+        extraChars.forEach(char => {
+          const displayChar = char === ' ' ? '&nbsp;' : char; // Handle spaces
+          lineHtmlContent += `<span class="error">${displayChar}</span>`; // Mark extra input as incorrect
+        });
+      }
+  
+      // Wrap each line of content in a div for proper line breaks
+      htmlContent += `<div>${lineHtmlContent}</div>`;
+    });
+  
+    codeElement.innerHTML = htmlContent; // Update the code element with the new HTML content
   }
+  // function updateJSTypingArea(phrase, userInput) {
+  //   const codeElement = document.querySelector('#js-typing-area');
+  //   if (!codeElement) return;
+
+  //   const phraseLines = phrase.split('\n'); // Split phrase into lines
+  //   const userInputLines = userInput.split('\n'); // Split user input into lines
+  //   let htmlContent = '';
+    
+  //   // Process each line
+  //   phraseLines.forEach((line, lineIndex) => {
+  //     const phraseChars = Array.from(line || ''); // Convert current line to characters
+  //     const userInputChars = Array.from(userInputLines[lineIndex] || ''); // Safely handle undefined lines
+  //     let lineHtmlContent = '';
+  //     // Special handling for expected blank lines
+  //   if (phraseChars.length === 0) {
+  //     // For blank lines, if the user has typed something, it should be marked as incorrect
+  //     if (userInputLines[lineIndex] && userInputLines[lineIndex].length > 0) {
+  //       userInputChars.forEach(char => {
+  //         const displayChar = char === ' ' ? '&nbsp;' : char; // Handle spaces
+  //         lineHtmlContent += `<span class="error">${displayChar}</span>`; // Mark user input as incorrect
+  //       });
+  //     } else {
+  //       // If there's no user input, render a zero-width space to keep the line's visual presence
+  //       lineHtmlContent += `&#8203;`; // Use a zero-width space
+  //     }
+  //     htmlContent += `<div class="blank-line">${lineHtmlContent}</div>`;
+  //     return; // Proceed to the next line
+  //   }
+  //     phraseChars.forEach((char, charIndex) => {
+  //       let classList = ['ghost-text']; // Default class for untyped text
+  //       let displayChar = char === ' ' ? '&nbsp;' : char; // Handle spaces
+  // // Check if the current character index is within the length of the user's input for this line
+     
+  //       if (charIndex < userInputChars.length) {
+  //         const userChar = userInputChars[charIndex];
+  //         if (userChar === char) {
+  //           classList = ['correct']; // Correct input
+  //         } else {
+  //           classList = ['error']; // Incorrect input
+  //         }
+  //       }
+
+  //       // Append character span to lineHtmlContent
+  //       lineHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;
+  //     });
+
+  //     // Wrap each line of content in a div for proper line breaks
+  //     htmlContent += `<div>${lineHtmlContent}</div>`;
+  //   });
+
+  //   codeElement.innerHTML = htmlContent; // Update the code element with the new HTML content
+  // }
+
+
+  // function updateJSTypingArea(phrase, userInput) {
+  //   const codeElement = document.querySelector('#js-typing-area');
+  //   if (!codeElement) return;
+  
+  //   const phraseLines = phrase.split('\n'); // Split phrase into lines
+  //   const userInputLines = userInput.split('\n'); // Split user input into lines
+  //   let htmlContent = '';
+  
+  //   // Process each line
+  //   phraseLines.forEach((line, lineIndex) => {
+  //     const phraseChars = Array.from(line || ''); // Convert current line to characters
+  //     const userInputChars = Array.from(userInputLines[lineIndex] || ''); // Safely handle undefined lines
+  //     let lineHtmlContent = '';
+  
+  //     phraseChars.forEach((char, charIndex) => {
+  //       let classList = ['ghost-text']; // Default class for untyped text
+  //       let displayChar = char === ' ' ? '&nbsp;' : char; // Handle spaces
+  
+  //       if (charIndex < userInputChars.length) {
+  //         const userChar = userInputChars[charIndex];
+  //         if (userChar === char) {
+  //           classList = ['correct-input']; // Correct input
+  //         } else {
+  //           classList = ['error']; // Incorrect input
+  //         }
+  //       }
+  
+  //       // Append character span to lineHtmlContent
+  //       lineHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;
+  //     });
+  
+  //     // Wrap each line of content in a div or span for proper line breaks
+  //     htmlContent += `<div>${lineHtmlContent}</div>`;
+  //   });
+  
+  //   codeElement.innerHTML = htmlContent; // Update the code element with the new HTML content
+  // }
+
 // Function to update the timer display smoothly
 function updateTimer() {
   if (!timerStarted) {
@@ -135,7 +234,7 @@ function stopTimer() {
     const seconds = elapsedTime / 1000; // Convert to seconds
     const minutes = seconds / 60; // Convert to minutes
 
-    const totalChars = userInputField.value.trim().length;
+    const totalChars = userInputField.textContent.length;
     const wordsTyped = totalChars / 5; // Standard definition of a "word"
     const wpm = wordsTyped / minutes; // Calculate words per minute
 
@@ -147,21 +246,58 @@ function stopTimer() {
 }
 
 const updateFunction = () => {
-  const codeElement = document.querySelector('#js-typing-area code');
-  if (codeElement) {
-    const phrase = codeElement.getAttribute('data-phrase');
-    if(phrase){updateJSTypingArea(phrase, userInputField.value);
-    }else{console.error('data-phrase not found! '+ codeElement.getAttribute());}
+  const userInput =  userInputField.value; // Use textContent for accuracy
+  //const codeElement = document.querySelector('#js-typing-area');
+  if (phraseText) {
+    //const phrase = codeElement.getAttribute('data-phrase');
+
+    console.log('Phrase:', phraseText); // Check what phrase contains
+    console.log('User input:', userInput); // Check what userInput contains
 
     
-  } else {
-    console.error('Code element not found!');
-  }
+      // Check for completion using a more nuanced comparison if necessary
+      if (userInput === phraseText) { // Consider case sensitivity based on your requirements
+        stopTimer();
+      } else if (!timerStarted && userInput.length > 0) {
+        startTimer();
+      }
+      updateJSTypingArea(phraseText, userInput);
+    } else {
+      console.error('Phrase text is undefined!');
+    }
+
+    
+  
 };
+ 
+// Listen for input changes
+userInputField.addEventListener('input', (event) => {
+    console.log(event)
+  
+  updateFunction();
+  
+});
+userInputField.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+      e.preventDefault(); // Prevent default Enter behavior
 
+      let currentValue = userInputField.value;
+      let cursorPosition = userInputField.selectionStart;
+      console.log(`Before calculation: cursorPosition=${cursorPosition}, currentValue=${currentValue}`);
 
-
-
+    // Calculate new cursor position
+    let { newPosition, modifiedValue } = calculateNewCursorPosition(currentValue, cursorPosition, phraseText);
+    
+      // Debugging output
+    console.log(`After calculation: newPosition=${newPosition}, modifiedValue=${modifiedValue}`);
+    // Apply the modified value to the textarea
+    userInputField.value = modifiedValue;
+      setTimeout(() => {
+        userInputField.setSelectionRange(newPosition, newPosition);
+     
+      }, 10);
+  }
+});
   // Listen for cursor position changes without input changes (e.g., arrow keys, mouse click)
   userInputField.addEventListener('click', updateFunction);
 
@@ -170,27 +306,81 @@ const updateFunction = () => {
       updateFunction();
     }
   });
-    // Listen for input changes
-userInputField.addEventListener('input', (event) => {
-  const userInput = event.target.value.trim();
-  const codeElement = document.querySelector('#js-typing-area code');
+   
   
-  if (codeElement) {
-    const phrase = codeElement.getAttribute('data-phrase').trim();
-    updateJSTypingArea(phrase, userInput);
+});
+// function calculateNewCursorPosition(currentValue, cursorPosition, expectedPhrase) {
+//   let newPosition = cursorPosition; // Initialize newPosition to current cursorPosition
 
-    if (userInput.localeCompare(phrase, undefined, { sensitivity: 'base' }) === 0) {
-      stopTimer();
-    } else if (!timerStarted && userInput.length > 0) {
-      startTimer();
-    }
-  } else {
-    console.error('Code element not found!');
+//   // Split the expected phrase and current value into lines
+//   let expectedLines = expectedPhrase.split('\n');
+//   let currentLines = currentValue.split('\n');
+
+//   // Find the current line number
+//   let currentLineNumber = currentValue.substring(0, cursorPosition).split('\n').length - 1;
+//   let currentLine = currentLines[currentLineNumber] || '';
+//   let expectedLine = expectedLines[currentLineNumber] || '';
+
+//   // If the current line is incomplete and Enter is pressed
+//   if (currentLine.length < expectedLine.length) {
+//     let incompletePart = expectedLine.substring(currentLine.length);
+//     let invalidInput = incompletePart.replace(/./g, '|'); // Replace all characters with '|'
+//     currentLines[currentLineNumber] += invalidInput;
+
+//     currentValue = currentLines.join('\n'); // Update the currentValue with the modified line
+//     newPosition = currentValue.length; // Move cursor to the end of the modified line
+//   }
+
+//   // Move to the next line if applicable
+//   if (currentLineNumber + 1 < expectedLines.length) {
+//     let nextLineExpected = expectedLines[currentLineNumber + 1];
+//     let leadingSpaces = nextLineExpected.match(/^ */)[0].length; // Count leading spaces for indentation
+//     newPosition = currentValue.length + 1 + leadingSpaces; // Adjust for new line and indentation
+//   } else {
+//     newPosition = currentValue.length; // If there are no more lines, stay at the end
+//   }
+
+//   return { newPosition, modifiedValue: currentValue };
+// }
+function calculateNewCursorPosition(currentValue, cursorPosition, expectedPhrase) {
+  let newPosition = cursorPosition; // Initialize newPosition to current cursorPosition
+  let modifiedValue = currentValue; // Start with the current value, potentially modify it below
+
+  // Split the expected phrase and current value into lines
+  let expectedLines = expectedPhrase.split('\n');
+  let currentLines = currentValue.split('\n');
+
+  // Find the current line number
+  let currentLineNumber = currentValue.substring(0, cursorPosition).split('\n').length - 1;
+  let currentLine = currentLines[currentLineNumber] || '';
+  let expectedLine = expectedLines[currentLineNumber] || '';
+
+  // If the current line is shorter than expected, append error indicators
+  if (currentLine.length < expectedLine.length) {
+    let incompletePart = expectedLine.substring(currentLine.length);
+    let invalidInput = incompletePart.replace(/./g, '|'); // Indicate errors
+    currentLines[currentLineNumber] += invalidInput;
+    modifiedValue = currentLines.join('\n'); // Rebuild the full text
   }
-});
-});
 
+  // Moving to the next line if necessary
+  if (currentLineNumber + 1 < expectedLines.length) {
+    // We have another line to go to
+    let nextLine = currentLineNumber + 1 < currentLines.length ? currentLines[currentLineNumber + 1] : "";
+    let leadingSpacesNextLine = expectedLines[currentLineNumber + 1].match(/^ */)[0].length; // Count leading spaces for indentation of the next expected line
+    if (nextLine.length === 0 || nextLine.length < leadingSpacesNextLine) {
+      // If the next line is empty or not fully indented, adjust it
+      modifiedValue += '\n' + " ".repeat(leadingSpacesNextLine); // Add new line and indent for the next line
+      newPosition = modifiedValue.length; // Move cursor to the end of the new line (after indentation)
+    } else {
+      // Move cursor to the beginning of the next line if it already exists
+      let positionToNextLine = currentValue.indexOf('\n', cursorPosition) + 1; // Find next line break and move one character beyond it
+      newPosition = positionToNextLine + leadingSpacesNextLine; // Adjust for indentation
+    }
+  }
 
+  return { newPosition, modifiedValue };
+}
 function darkExpected() {
   return localStorage.theme === 'dark' || (!('theme' in localStorage) &&
     window.matchMedia('(prefers-color-scheme: dark)').matches);

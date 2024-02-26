@@ -29,7 +29,7 @@ defmodule TyperWeb.HomeLive do
             <.button type="button" phx-click={show_modal("new-phrase-modal")}>Create Phrase</.button>
             <form phx-change="validate" action="/set_custom_phrase" method="post">
                 <input type="hidden" name="_csrf_token" value={@csrf_token} />
-                <input name="custom_phrase" type="text" placeholder="Enter custom phrase here" />
+                <textarea name="custom_phrase" type="textarea" placeholder="Enter custom phrase here"></textarea>
                 <button type="submit" disabled={@disable_submit} class="buttonly">Type this</button>
             </form>
 

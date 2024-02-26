@@ -34,13 +34,13 @@ defmodule TyperWeb.PhraseLive do
         custom_phrase = session["custom_phrase"] || "Default custom phrase"
         phrase = %Typer.Game.Phrase{text: custom_phrase, id: nil}
 
-        {:ok, assign(socket, phrase: phrase, user_input: "", error_positions: [], start_time: nil, end_time: nil, completed: false)}
+        {:ok, assign(socket, phrase: phrase, user_input: "", error_positions: [], start_time: nil, end_time: nil, completed: false, comparison_results: [])}
 
 
       id ->
         # Normal case for fetching a phrase by its database ID
         phrase = Game.get_phrase!(id)
-        {:ok, assign(socket, phrase: phrase, user_input: "", error_positions: [], start_time: nil, end_time: nil, completed: false)}
+        {:ok, assign(socket, phrase: phrase, user_input: "", error_positions: [], start_time: nil, end_time: nil, completed: false, comparison_results: [])}
 
     end
   end
@@ -59,106 +59,211 @@ def render(assigns) do
   elapsed = elapsed_time(assigns.start_time, assigns.end_time)
   assigns = assign(assigns, :elapsed, elapsed)
   #is_completed = assigns.user_input == assigns.phrase.text
-
   ~H"""
-    <h2>Phrase Details</h2>
-    <.button type="button" phx-click={JS.dispatch("toogle-darkmode")}>DARKMODE</.button>
+  <form phx-change="input" phx-submit="submit">
+  <pre><code><textarea id="code-editor" name="user_input" phx-hook="HandleEnter" phx-debounce="1000"></textarea></code></pre>
 
-
-    <!-- Elixir managed Area -->
-    <div id="typing-area" class="">
-    <div>Elixir elapsed time: <%= @elapsed %> seconds </div>
-    <%= render_typing_area(@phrase.text, @user_input, @error_positions) %>
-    </div>
-
-
-    <!-- JavaScript Managed Area  -->
-
+    </form>
+  <!-- JavaScript Managed Area  -->
+    <div id="phrase-data" data-phrase-text={@phrase.text}></div>
     <div phx-update="ignore" id="js-text-area">
     <div id="js-timer">READY</div>
-    <div id="js-typing-area" class="typing-area"><pre><code data-phrase={@phrase.text}></code></pre></div>
+    <pre><code id="js-typing-area" class="typing-area" data-phrase={@phrase.text}>
+      <!-- Your code snippet here. If the text "aa" is meant to be the phrase, ensure it's placed correctly. -->
+
+    </code></pre>
     </div>
 
+  <div id="typing-area">
+    <pre><code><%= render_typing_area(@phrase, @user_input) %></code></pre>
+  </div>
+
+  """
 
 
 
-    <div id="input_container">
-      <input type="text" readonly={@completed} phx-hook="AutoFocus" id="user_input" phx-keyup="process_input" name="user_input" value={@user_input}/>
-
-    </div>
-
-
-
-    """
   end
 
-  defp render_typing_area(phrase, user_input, _error_positions) do
-    phrase_codepoints = String.codepoints(phrase)
-    user_input_codepoints = String.codepoints(user_input)
+  defp compare_input(user_input, phrase) do
+    user_input
+    |> String.graphemes()
+    |> Enum.zip(String.graphemes(phrase.text))
+    |> Enum.map(fn
+      {input_char, expected_char} when input_char == expected_char -> {input_char, true}
+      {input_char, _expected_char} -> {input_char, false}
+      nil -> {" ", false} # Adjust as needed for handling end of input
+    end)
+  end
 
-    html_content = phrase_codepoints
-    |> Enum.with_index()
+  defp split_into_lines(phrase) do
+    phrase
+    |> String.split("\n") # Split by newline character
+  end
+  defp render_typing_area(phrase, user_input) do
+    phrase_lines = split_into_lines(phrase.text)
+    user_input_lines = split_into_lines(user_input)
+
+    rendered_lines = Enum.with_index(phrase_lines)
+    |> Enum.map(fn {phrase_line, line_index} ->
+      user_input_line = Enum.at(user_input_lines, line_index, "")
+      render_line(phrase_line, user_input_line)
+    end)
+
+    # Join the rendered lines with a delimiter suitable for HTML, such as a div or br for new lines
+    html_content = Enum.join(rendered_lines, "\n") |> Phoenix.HTML.raw()
+
+    html_content
+  end
+  defp render_line(phrase_line, user_input_line) do
+    # Logic to render a single line comparing phrase_line and user_input_line
+    # This should return a string or a safe HTML structure.
+    # Example:
+    phrase_graphemes = String.graphemes(phrase_line)
+    input_graphemes = String.graphemes(user_input_line)
+    IO.inspect( input_graphemes, label: "rendering ");
+    Enum.with_index(phrase_graphemes)
     |> Enum.map(fn {char, index} ->
-      user_char = Enum.at(user_input_codepoints, index)
+      user_char = Enum.at(input_graphemes, index)
+      class = cond do
+        user_char == nil -> "incomplete"
+        user_char == char -> "correct"
+        user_char != char -> "error"
+        true -> "incorrect"
+      end
 
-      # Determine the display character
-      display_char =
-        if char == " " and user_char != nil and user_char != char, do: "␣", else: char
-
-      class =
-        cond do
-          user_char != nil and user_char != char -> "error"
-          index == String.length(user_input) -> "current"
-          true -> ""
-        end
-
-      # Apply a special class for spaces if they are not yet typed or correctly typed,
-      # to maintain their visibility if styled with CSS.
-      space_class = if char == " ", do: "space", else: ""
-
-      "<span class=\"#{class} #{space_class}\">#{display_char}</span>"
+      # Return the HTML content for each character
+      Phoenix.HTML.Tag.content_tag(:span, char, class: class) |> Phoenix.HTML.safe_to_string()
     end)
     |> Enum.join()
-
-    Phoenix.HTML.raw(html_content)
   end
+  # defp render_typing_area(phrase, user_input) do
+  #   comparison_results = compare_input(user_input, phrase)
 
+  #   comparison_html = Enum.reduce(comparison_results, "", fn {char, correct}, acc ->
+  #     class = if correct, do: "correct", else: "incorrect"
+  #     content = extract_safe_content(char) # Ensure you're working with the content
+
+  #     safe_string =
+  #       Phoenix.HTML.html_escape(content)
+  #       |> case do
+  #         {:safe, iodata} -> IO.iodata_to_binary(iodata)
+
+  #       end
+  #     acc <> "<span class=\"#{class}\">#{safe_string}</span>"
+  #   end)
+
+  #   Phoenix.HTML.raw(comparison_html)
+  # end
+  #Below workes with code blocks and large formatted phrases safe escapes
+   # defp render_typing_area(phrase, user_input) do
+  #   phrase_graphemes = String.graphemes(phrase.text)
+  #   input_graphemes = String.graphemes(user_input)
+
+  #   html_content = phrase_graphemes
+  #   |> Enum.with_index()
+  #   |> Enum.map(fn {char, index} ->
+  #     user_char = Enum.at(input_graphemes, index)
+  #     class = cond do
+  #       user_char == nil -> "incomplete"
+  #       user_char == char -> "correct"
+  #       user_char != char -> "incorrect"
+  #       true -> "incorrect"
+  #     end
+
+  #     # Generate content tag for each character.
+  #     Phoenix.HTML.Tag.content_tag(:span, char, class: class)
+  #   end)
+  #   |> Enum.map(&Phoenix.HTML.safe_to_string/1) # Convert each element to a string.
+  #   |> Enum.join() # Join them into a single string.
+
+  #   Phoenix.HTML.raw(html_content) # Mark the joined string as safe HTML.
+  # end
+  # def calculate_new_cursor_position(current_text, current_cursor_position) do
+  #   # Split the text into lines
+  #   lines = String.split(current_text, "\n", trim: true)
+
+  #   # Find the current line based on the cursor position
+  #   {current_line_index, _} = Enum.reduce_while(lines, {0, 0}, fn line, {index, pos} ->
+  #     line_end_pos = pos + String.length(line) + 1 # +1 for the newline character
+  #     if line_end_pos >= current_cursor_position do
+  #       {:halt, {index, line_end_pos}}
+  #     else
+  #       {:cont, {index + 1, line_end_pos}}
+  #     end
+  #   end)
+
+  #   # Calculate the start position of the next line
+  #   next_line_start_pos = Enum.at(lines, 0..current_line_index)
+  #   |> Enum.join("\n")
+  #   |> String.length()
+
+  #   # If the current line is the last one, keep the cursor at the end
+  #   if current_line_index >= Enum.count(lines) - 1 do
+  #     String.length(current_text)
+  #   else
+  #     next_line_start_pos + 1 # +1 to move to the start of the next line
+  #   end
+  # end
+  defp extract_safe_content({:safe, content}), do: content
+  defp extract_safe_content(other), do: other
   @impl true
-  def handle_event("process_input", %{"value" => new_input}, socket) do
-
+  def handle_event("process_input", %{"input" => new_input}, socket) do
     error_positions = calculate_error_positions(socket.assigns.phrase.text, new_input)
     finished_typing = new_input == socket.assigns.phrase.text
 
-    # Check if the phrase has already been completed to avoid restarting the timer
-    if socket.assigns.completed do
-      # If already completed, just update the user_input and other assigns without altering the timer
-      {:noreply, assign(socket, user_input: new_input, error_positions: error_positions)}
-  else
-      start_time = socket.assigns.start_time || DateTime.utc_now()
-      end_time = if finished_typing, do: DateTime.utc_now(), else: nil
-      # If not completed, update all relevant assigns including the timer
-      updated_socket =
-        assign(socket, user_input: new_input, error_positions: error_positions,
-              start_time: start_time, end_time: end_time,
-              completed: finished_typing)
+    start_time = socket.assigns.start_time || DateTime.utc_now()
+    end_time = if finished_typing, do: DateTime.utc_now(), else: nil
 
-      {:noreply, updated_socket}
+    updated_socket = assign(socket,
+      user_input: new_input,
+      error_positions: error_positions,
+      start_time: start_time,
+      end_time: end_time,
+      completed: finished_typing
+    )
+
+    {:noreply, updated_socket}
+  end
+  @impl true
+  def handle_event("handle_enter", %{"value" => value}, socket) do
+    # Assuming Enter finalizes the input or triggers specific logic
+    IO.inspect(value, label: "Enter Key Pressed With Value")
+
+    # Example action: Check if the user has completed typing correctly
+    if value == socket.assigns.phrase.text do
+      # Mark as completed and set end time
+      {:noreply, assign(socket, completed: true, end_time: DateTime.utc_now())}
+    else
+      # Optionally handle incorrect completion or simply return unchanged socket
+      {:noreply, socket}
     end
   end
 
+  @impl true
+  def handle_event("input", %{"user_input" => input}, socket) do
+    {:noreply, assign(socket, user_input: input)}
+  end
+  # def handle_event("keydown", %{"key" => "Enter", "target" => target}, socket) do
+  #   # Calculate new cursor position to move to the start of the next line.
+  #   # This is conceptual; your actual implementation may vary.
+  #   new_cursor_position = calculate_new_cursor_position(target.value)
 
+  #   # Broadcast a client-side event to move the cursor.
+  #   # This assumes you have a custom JS hook or similar mechanism to listen to this event.
+  #   push_event(socket, "move-cursor", %{position: new_cursor_position})
 
-  # defp elapsed_time(start_time, end_time) do
-  #   case {start_time, end_time} do
-  #     {nil, _} -> 0
-  #     {_, nil} ->
-  #       # Calculate the elapsed time from start_time to the current moment
-  #       DateTime.diff(DateTime.utc_now(), start_time, :second)
-  #     {_, _} ->
-  #       # Calculate the elapsed time between start_time and end_time
-  #       DateTime.diff(end_time, start_time, :second)
-  #   end
+  #   {:noreply, socket}
   # end
+
+
+def handle_event(event, params, socket) do
+  IO.inspect(event, label: "Event")
+  IO.inspect(params, label: "Params")
+  {:noreply, socket}
+end
+
+
+
 
   defp elapsed_time(start_time, end_time) do
     case {start_time, end_time} do
@@ -189,10 +294,4 @@ def render(assigns) do
       Enum.at(phrase_chars, index) != Enum.at(input_chars, index)
     end)
   end
-
-
-
-
-
-
 end

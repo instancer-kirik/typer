@@ -141,4 +141,25 @@ main {
   background-color: #e0e0e0;
 }
 
+.ghost-text {
+  color: #ccc; /* Light grey for ghost text */
+}
 
+.correct-input {
+  color: #000; /* Standard text color for correct input */
+}
+
+.error {
+  color: #f00; /* Red for errors */
+}
+.incorrect {
+  color: #f00; /* Red for errors */
+}
+#js-typing-area {
+  white-space: pre-wrap; /* Allows text to wrap and preserves whitespace */
+  word-wrap: break-word; /* Older browsers */
+  overflow-wrap: break-word; /* Standard: breaks long words if necessary to fit */
+  width: 100%; /* Adjust as necessary */
+  max-width: 400px; /* Or the maximum width you want */
+  /* Additional styling as needed */
+}
