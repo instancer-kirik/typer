@@ -58,27 +58,78 @@ defmodule TyperWeb.PhraseLive do
 def render(assigns) do
   elapsed = elapsed_time(assigns.start_time, assigns.end_time)
   assigns = assign(assigns, :elapsed, elapsed)
-  #is_completed = assigns.user_input == assigns.phrase.textssrs
+  #is_completed = assigns.user_input == assigns.phrase.text
+  # textarea.typing-area {
+  #   opacity: 0; /* Make the textarea completely transparent */
+  #   color: transparent; /* Make text color transparent */
+  #   background-color: transparent; /* Ensure background is transparent */
+  #   border: none; /* Remove the border */
+  #   outline: none; /* Remove the outline */
+  #   width: 100%; /* Ensure it covers the entire container */
+  #   height: 100%; /* Match the height to the container */
+  # }r
+  # .js-content, .typing-area, #code-editor {
+  #   position: absolute;
+  #   top: 0;
+  #   left: 0;
+  #   width: 100%;
+  #   height: 400px; /* Match your content height */
+  #   padding: 0;
+  #   box-sizing: border-box;
+  # }
+
+
+  # .typing-area {
+  #   word-wrap: normal;
+  #   word-break: normal;
+  #   white-space: normal;
+  #   display: block;
+  #   height: auto;
+  #   margin: 3px auto;
+  #   line-height: 1.4;
+  #   -webkit-line-clamp: 1;
+  #   -webkit-box-orient: vertical;
+  #   font-family: monospace; /* Ensure consistent font */
+  #   font-size: 16px; /* Ensure consistent font size */
+  #   width: 100%; /* Fill the container width */
+
+  #   padding: 8px; /* Match the padding of the textarea */
+  #   /* line-height: inherit; Inherit line height from parent or set explicitly */
+  #   position: relative; /* Positioned relative to its normal position */
+  #   z-index: 1; /* Ensure it's below the input textarea */
+  # }as
   ~H"""
-  <form class="typing-area" phx-change="input" phx-submit="submit">
-  <pre><code><textarea class="typing-area" id="code-editor" name="user_input" phx-debounce="1000"></textarea></code></pre>
 
-    </form>
-  <!-- JavaScript Managed Area  -->
-    <div id="phrase-data" data-phrase-text={@phrase.text}></div>
-    <div  phx-update="ignore" id="js-text-area">
-    <div id="js-timer">READY</div>
-    <pre class = "typing-area">
-    <code class="typing-area" id="js-typing-area"  data-phrase={@phrase.text}>
-      <!-- Your code snippet here. If the text "aa" is meant to be the phrase, ensure it's placed correctly. -->
+  <div class="layout-container" >
 
-    </code></pre>
+
+
+    <div class="js-content" style="position: relative;">
+    <!-- JavaScript Managed Area  -->
+      <div id="phrase-data" data-phrase-text={@phrase.text}></div>
+      <div  phx-update="ignore" id="js-text-area">
+      <div id="js-timer">READY</div>
+      <pre class = "typing-area" style="position: absolute; top: 0; left: 0; z-index: 1;">
+      <code class="typing-area" id="js-typing-area"  >
+        <!--data-phrase={@phrase.text} Your code snippet here. If the text "aa" is meant to be the phrase, ensure it's placed correctly. -->
+
+      </code></pre>
+      </div>
+    <form class="typing-area" phx-change="input" phx-submit="submit">
+    <pre><code><textarea class="user-input" id="code-editor" name="user_input" phx-hook = "AutoFocus" phx-debounce="1000"
+    style="position: absolute; top: 0; left: 0; z-index: 2; background-color: transparent; color: transparent; border: none;"></textarea></code></pre>
+
+
+      </form>
+
+
     </div>
-
-  <div id="typing-area">
-    <pre class="typing-area2"><code ><%= render_typing_area(@phrase, @user_input) %></code></pre>
+    <div class="elixir-content">
+      <div id="typing-area">
+        <pre class="typing-area2"><code ><%= render_typing_area(@phrase, @user_input) %></code></pre>
+      </div>
+    </div>
   </div>
-
   """
 
 
@@ -92,7 +143,7 @@ def render(assigns) do
     |> Enum.map(fn
       {input_char, expected_char} when input_char == expected_char -> {input_char, true}
       {input_char, _expected_char} -> {input_char, false}
-      nil -> {" ", false} # Adjust as needed for handling end of input
+      nil -> {" ", false} # Adjust as needed for handling end of inputw
     end)
   end
 

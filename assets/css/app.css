@@ -148,52 +148,85 @@ main {
 .correct-input {
   color: #000; /* Standard text color for correct input */
 }
-
+#typing-area span.correct {
+  color: greenyellow; /* Ensure this is visible */
+}
 .error {
   color: #f00; /* Red for errors */
 }
 .incorrect {
   color: #f00; /* Red for errors */
 }
-.typing-area {
-  word-wrap: normal;
-  word-break: normal;
-  white-space: normal;
-  display: block;
+.typing-overlay-container {
+  /* Adjust dimensions as needed */
+  width: 100%;
   height: auto;
-  margin: 3px auto;
-  line-height: 1.4;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  font-family: monospace; /* Ensure consistent font */
-  font-size: 16px; /* Ensure consistent font size */
-  width: 100%; /* Fill the container width */
-  max-width: 400px; /* Adjust based on your design */
-  padding: 8px; /* Match the padding of the textarea */
-  /* line-height: inherit; Inherit line height from parent or set explicitly */
-  position: relative; /* Positioned relative to its normal position */
-  z-index: 1; /* Ensure it's below the input textarea */
+  min-height: 100px; /* Ensure it's tall enough for your content */
 }
+/* Ensure the textarea is transparent and overlays the feedback area */
+
+
 pre code {
   white-space: pre-wrap; /* Allow long lines to wrap */
   word-wrap: break-word; /* Ensure words can break and wrap to the next line */
   overflow-wrap: break-word; /* Similar to word-wrap, for better compatibility */
 }
-#code-editor {
-  
-  /* opacity: 0; Make textarea completely transparent */
-  background-color: transparent;
-  border: none;
-  z-index: 2; /* Ensure it's above the ghost text */
-  resize: none; /* Disable resizing */
-  overflow: hidden; /* Hide scrollbar */
-  font-family: monospace; /* Match the font family */
-  font-size: 16px; /* Match the font size */
-  padding: 8px; /* Ensure padding matches */
-}
-#js-typing-area .word {
+
+.word {
   /* Example styles */
   display: inline-block; /* Treat words as inline blocks to manage spacing and wrapping */
    /* margin-right: 0.25em;Adjust spacing between words */
   /* Add any other word-specific styles here */
+}
+.layout-container {
+  position: relative;
+  width: 100%; /* or specific width as needed */
+}
+
+.js-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%; /* or specific width as needed */
+  height: 400px; /* Adjust based on content */
+  z-index: 1;
+}
+.user-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%; /* Ensure it covers the container width */
+  min-height: 100%;
+  z-index: 2;
+  
+  border: none;
+  outline: none;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 150%;
+  box-sizing: border-box; /* Ensure padding and border are included in width/height */
+  padding: 0; /* Remove padding */
+  margin: 0; /* Remove margin */
+  caret-color: rgb(1, 68, 12);
+}
+.typing-area{
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%; /* Ensure it covers the container width */
+  min-height: 100%; /* Adjust if you have a specific height in mind or use 100% for full container height */
+  z-index: 2; /* Ensure the textarea is above the content it overlays */
+  background-color: transparent;
+  color: transparent; /* To keep the caret visible */
+  border: none;
+  outline: none;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 150%;
+}
+
+.elixir-content {
+  position: relative;
+  
+  width: 100%;
 }

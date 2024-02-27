@@ -54,70 +54,79 @@ liveSocket.connect()
 
 // Initialize the JS managed area after the document is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-  let elapsedTime = 0; // Initialize elapsedTime to capture the duration
+  let elapsedTime = 0; // Initialize elapsedTime to capture the durationr
   let startTime;
-  let timerInterval;
-  let animationFrameId;
   let timerStarted = false;
   const userInputField = document.getElementById('code-editor');
-  const phraseText = document.getElementById("phrase-data").dataset.phraseText;
+  const phraseData =document.getElementById("phrase-data");
+  if (!phraseData ) return;
+  const phraseText = phraseData.dataset.phraseText;
   const lines = phraseText.split('\n'); // For lines
-  if (!userInputField) return;
+  if (!userInputField ) return;
+  ///////Maybe make it recognize "eld ) return;" with "eld) return;"
   function updateJSTypingArea(phrase, userInput) {
-  const codeElement = document.querySelector('#js-typing-area');
-  if (!codeElement) return;
-
-  const phraseLines = phrase.split('\n'); // Split the phrase into lines
-  const userInputLines = userInput.split('\n'); // Split the user input into lines
-  let htmlContent = '';
-
-  phraseLines.forEach((phraseLine, lineIndex) => {
-    const userInputLine = userInputLines[lineIndex] || '';
-    let lineHtmlContent = '';
-    let wordHtmlContent = '';
-
-    // Iterate through each character of the phrase line
-    for (let i = 0; i <= phraseLine.length; i++) {
-      const phraseChar = phraseLine[i] || ' '; // Handle end of line by adding a space for splitting
-      const userInputChar = userInputLine[i];
-      let classList = ['ghost-text']; // Default class for characters not yet typed by the user
-      let displayChar = phraseChar; // Display the character from the phrase
-
-      if (userInputChar !== undefined) {
-        if (phraseChar === userInputChar) {
-          classList = ['correct']; // Correct input
-          
-        } else {
-          classList = ['error']; // Incorrect input
-          displayChar = userInputChar === ' ' ? '▄' : userInputChar; // Show underscore for error spaces
-          //displayChar = displayChar === ' ' ? '▄' : displayChar;
+    const codeElement = document.querySelector('#js-typing-area');
+    if (!codeElement) return;
+  
+    const phraseLines = phrase.split('\n');
+    const userInputLines = userInput.split('\n');
+    let htmlContent = '';
+  
+    phraseLines.forEach((phraseLine, lineIndex) => {
+      const userInputLine = userInputLines[lineIndex] || '';
+      let lineHtmlContent = '';
+      let wordHtmlContent = '';
+      let extraSpacesHandled = false;
+  
+      for (let i = 0; i < phraseLine.length; i++) {
+        const phraseChar = phraseLine[i];
+        const userInputChar = userInputLine[i] || ' ';
+        let classList = ['ghost-text'];
+        let displayChar = phraseChar === ' ' ? '&nbsp;' : phraseChar;
+  
+        if (userInputChar !== undefined) {
+          if (phraseChar === userInputChar || (phraseChar === ' ' && userInputChar === ' ')) {
+            classList = ['correct'];
+          } else if (userInputChar !== ' ') {
+            classList = ['error'];
+            displayChar = userInputChar === ' ' ? '▄' : userInputChar; // Use ▄ for error spaces
+          }
+        }
+  
+        wordHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;
+  
+        if (phraseChar === ' ' || i === phraseLine.length - 1) {
+          lineHtmlContent += `<span class="word">${wordHtmlContent}</span>`;
+          wordHtmlContent = '';
         }
       }
-      // Handle whitespace specially to ensure it's visible in HTML
-      displayChar = displayChar === ' ' ? '&nbsp;' : displayChar;
-      wordHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;
+  
+      // Handle trailing spaces in user input as correct, if they exist beyond the phrase length
+      if (userInputLine.length > phraseLine.length) {
+        const extraChars = userInputLine.slice(phraseLine.length);
+        if (/^\s*$/.test(extraChars)) { // Check if all extra characters are spaces
+          extraChars.split('').forEach(() => {
+            lineHtmlContent += `<span class="correct">&nbsp;</span>`;
+          });
+          extraSpacesHandled = true;
+        }
       }
-
-      // Add remaining wordHtmlContent to lineHtmlContent (handles case where line ends without space)
-      lineHtmlContent += `<span class="word">${wordHtmlContent}</span>`;
-
-
-    // Handle extra characters typed by the user beyond the current line of the phrase
-    if (userInputLine.length > phraseLine.length) {
-      const extraChars = userInputLine.slice(phraseLine.length);
-      Array.from(extraChars).forEach(char => {
-        const displayChar = char === ' ' ? '&nbsp;' : char; // Handle spaces
-        lineHtmlContent += `<span class="error">${displayChar}</span>`; // Mark extra input as incorrect
-      });
-    }
-
-    // Wrap the line content in a div for proper formatting
-    htmlContent += `<div class="line">${lineHtmlContent}</div>`;
-  });
-
-  // Update the code element with the new HTML content
-  codeElement.innerHTML = htmlContent;
-}
+  
+      // If there were no extra spaces or other characters that were handled as correct,
+      // handle any remaining extra characters as errors.
+      if (!extraSpacesHandled && userInputLine.length > phraseLine.length) {
+        const extraChars = userInputLine.slice(phraseLine.length);
+        extraChars.split('').forEach(char => {
+          const displayChar = char === ' ' ? '&nbsp;' : char;
+          lineHtmlContent += `<span class="error">${displayChar}</span>`;
+        });
+      }
+  
+      htmlContent += `<div class="line">${lineHtmlContent}</div>`;
+    });
+  
+    codeElement.innerHTML = htmlContent;
+  }
 
   // function updateJSTypingArea(phrase, userInput) {
   //   const codeElement = document.querySelector('#js-typing-area');
@@ -218,7 +227,7 @@ function updateTimer() {
   }
   const now = new Date();
   elapsedTime = now - startTime;
-  const seconds = (elapsedTime / 1000).toFixed(2); // Convert to seconds with two decimal places
+  const seconds = (elapsedTime / 1000).toFixed(2); //1 Convert to seconds with two decimal places
 
   const timerDisplay = document.getElementById('js-timer');
   if (timerDisplay) {
@@ -243,8 +252,10 @@ function stopTimer() {
     elapsedTime = endTime - startTime; // Update elapsedTime to ensure it's current
     const seconds = elapsedTime / 1000; // Convert to seconds
     const minutes = seconds / 60; // Convert to minutes
+    
 
-    const totalChars = userInputField.textContent.length;
+    const totalChars = userInputField.value.length;
+    console.log(totalChars);
     const wordsTyped = totalChars / 5; // Standard definition of a "word"
     const wpm = wordsTyped / minutes; // Calculate words per minute
 
@@ -289,7 +300,7 @@ userInputField.addEventListener('input', (event) => {
 });
 userInputField.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
-      e.preventDefault(); // Prevent default Enter behavior
+      e.preventDefault(); // Prevent default Enter behaviors
 
       let currentValue = userInputField.value;
       let cursorPosition = userInputField.selectionStart;
