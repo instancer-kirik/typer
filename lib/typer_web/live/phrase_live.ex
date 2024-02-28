@@ -97,36 +97,33 @@ def render(assigns) do
   #   /* line-height: inherit; Inherit line height from parent or set explicitly */
   #   position: relative; /* Positioned relative to its normal position */
   #   z-index: 1; /* Ensure it's below the input textarea */
-  # }as
+  # }asr
   ~H"""
 
   <div class="layout-container" >
-
-
-
+  <div  phx-update="ignore" id="timer-box">
+  <div id="js-timer">READY</div>
+  </div>
     <div class="js-content" style="position: relative;">
     <!-- JavaScript Managed Area  -->
       <div id="phrase-data" data-phrase-text={@phrase.text}></div>
-      <div  phx-update="ignore" id="js-text-area">
-      <div id="js-timer">READY</div>
-      <pre class = "typing-area" style="position: absolute; top: 0; left: 0; z-index: 1;">
-      <code class="typing-area" id="js-typing-area"  >
-        <!--data-phrase={@phrase.text} Your code snippet here. If the text "aa" is meant to be the phrase, ensure it's placed correctly. -->
-
-      </code></pre>
+      <div  phx-update="ignore" id="js-text-area" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+      <div class="js-typing-area" style="position: relative;">
+      <pre style="margin: 0; padding: 0; box-sizing: border-box; font-family: monospace; font-size: 10px; line-height: 120%; width: 100%; height: 100%;">
+      <code style="white-space: pre-wrap;" id="js-typing-area"></code></pre>
       </div>
-    <form class="typing-area" phx-change="input" phx-submit="submit">
-    <pre><code><textarea class="user-input" id="code-editor" name="user_input" phx-hook = "AutoFocus" phx-debounce="1000"
-    style="position: absolute; top: 0; left: 0; z-index: 2; background-color: transparent; color: transparent; border: none;"></textarea></code></pre>
+      </div>
+    <form class="typing-area" phx-change="input" phx-submit="submit" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;">
+    <textarea class="user-input" id="code-editor" name="user_input" phx-hook = "AutoFocus" phx-debounce="1000"
 
-
+    style="background-color: transparent; color: white; border: none; width: 100%; height: 100%; font-family: monospace; font-size: 10px; line-height: 120%; box-sizing: border-box;"></textarea>
       </form>
 
 
     </div>
     <div class="elixir-content">
       <div id="typing-area">
-        <pre class="typing-area2"><code ><%= render_typing_area(@phrase, @user_input) %></code></pre>
+        <pre ><code class="typing-area2" ><%= render_typing_area(@phrase, @user_input) %></code></pre>
       </div>
     </div>
   </div>
@@ -162,7 +159,7 @@ def render(assigns) do
     end)
 
     # Join the rendered lines with a delimiter suitable for HTML, such as a div or br for new lines
-    html_content = Enum.join(rendered_lines, "\n") |> Phoenix.HTML.raw()
+    html_content = Enum.join(rendered_lines) |> Phoenix.HTML.raw()
 
     html_content
   end

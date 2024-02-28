@@ -33,11 +33,12 @@ defmodule TyperWeb.HomeLive do
                 <button type="submit" disabled={@disable_submit} class="buttonly">Type this</button>
             </form>
 
-            <div id="opts" phx-update="stream" class= "flex flex-col gap-2">
-                <div :for ={{dom_id, phrase} <- @streams.phrases} id={dom_id} class = "w-1/2 mx-auto flex flex-col gap-2 p-4 border rounded">
-                <p><%= phrase.user.email %></p>
+            <div id="opts" phx-update="stream" class= " flex flex-col gap-2">
+                <div :for ={{dom_id, phrase} <- @streams.phrases} id={dom_id} class = "w-full mx-auto flex flex-col gap-2 p-4 border rounded" style="font-size: 10px;">
+                <p  ><%= phrase.user.email %></p>
                 <a href="#" phx-click="show-phrase" phx-value-id={phrase.id}><%= phrase.text %></a>
-
+                <!-- Delete button for each phrase -->
+                  <button phx-click="delete-phrase" phx-value-id={phrase.id}>Delete</button>
                 </div>
             </div>
             <.modal id="new-phrase-modal">
@@ -110,6 +111,14 @@ defmodule TyperWeb.HomeLive do
             errors = translate_errors(error_map) # Adjust based on actual error structure
             {:noreply, assign(socket, validation_errors: errors)}
         end
+      end
+      def handle_event("delete-phrase", %{"id" => phrase_id}, socket) do
+        # Assuming you have a function `delete_phrase/1` in your `Game` context
+        Game.delete_phrase(phrase_id)
+
+        # Update the list of phrases after deletions
+        phrases = Game.list_phrases()
+        {:noreply, assign(socket, streams: %{phrases: phrases})}
       end
       def handle_event("toggle_dark_mode", _params, socket) do
         # Trigger client-side navigation to the controller action

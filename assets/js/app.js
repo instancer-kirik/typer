@@ -86,20 +86,35 @@ document.addEventListener('DOMContentLoaded', () => {
   
         if (userInputChar !== undefined) {
           if (phraseChar === userInputChar || (phraseChar === ' ' && userInputChar === ' ')) {
-            classList = ['correct'];
+            classList = ['correct-input'];//ssssr
           } else if (userInputChar !== ' ') {
             classList = ['error'];
             displayChar = userInputChar === ' ' ? '▄' : userInputChar; // Use ▄ for error spaces
           }
         }
-  
-        wordHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;
-  
-        if (phraseChar === ' ' || i === phraseLine.length - 1) {
+  // Append the character to the word HTML, handling spaces as their own "word"
+        if (phraseChar === ' ') {
+          // Close the previous word and start a new span for the space
           lineHtmlContent += `<span class="word">${wordHtmlContent}</span>`;
-          wordHtmlContent = '';
-        }
+          wordHtmlContent = ''; // Reset word HTML content
+          // Add the space as its own word span
+          lineHtmlContent += `<span class="word"><span class="${classList.join(' ')}">${displayChar}</span></span>`;
+      } else {
+          wordHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;
       }
+
+      // Ensure the last word is added if it's not followed by a space
+      if (i === phraseLine.length - 1 && wordHtmlContent !== ' ') {
+          lineHtmlContent += `<span class="word">${wordHtmlContent}</span>`;
+      }
+    }
+      //   wordHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;//changed from space to blank
+  
+      //   if (phraseChar === ' ' || i === phraseLine.length - 1) {
+      //     lineHtmlContent += `<span class="word">${wordHtmlContent}</span>`;
+      //     wordHtmlContent = '';
+      //   }
+      // }
   
       // Handle trailing spaces in user input as correct, if they exist beyond the phrase length
       if (userInputLine.length > phraseLine.length) {

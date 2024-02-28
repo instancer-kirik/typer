@@ -17,6 +17,10 @@ defmodule Typer.Game do
   def get_phrase!(id) do
     Repo.get!(Phrase, id)
   end
+  def delete_phrase(id) do
+    phrase = Repo.get!(Phrase, id)
+    Repo.delete(phrase)
+  end
   def save(phrase_params) do
     %Phrase{}
     |> Phrase.changeset(phrase_params)
