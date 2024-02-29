@@ -172,12 +172,7 @@ pre code {
   overflow-wrap: break-word; /* Similar to word-wrap, for better compatibility */
 }
 
-.word {
-  /* Example styles */
-  display: inline-block; /* Treat words as inline blocks to manage spacing and wrapping */
-   /* margin-right: 0.25em;Adjust spacing between words */
-  /* Add any other word-specific styles here */
-}
+
 .layout-container {
   position: relative;
   width: 100%; /* or specific width as needed */
@@ -202,8 +197,8 @@ pre code {
   left: 0;
   width: 100%; /* Ensure it covers the container width */
   min-height: 100%;
-  z-index: 2;
-  
+  z-index: 0;
+  color: transparent;
   border: none;
   outline: none;
   font-family: monospace;
@@ -224,7 +219,7 @@ pre code {
   min-height: 100%; /* Adjust if you have a specific height in mind or use 100% for full container height */
   z-index: 2; /* Ensure the textarea is above the content it overlays */
   background-color: transparent;
-  color: transparent; /* To keep the caret visible */
+   /* To keep the caret visible */
   border: none;
   outline: none;
   font-family: monospace;
@@ -259,4 +254,38 @@ pre code {
   position: relative;
   
   width: 100%;
+}
+.line {
+   /* display: block;Ensures each .line starts on a new line */
+  white-space: pre-wrap; /* Maintains whitespace but allows normal wrapping within the .line */
+   /* margin-bottom: 1em;Adds space between lines, adjust as needed */
+}
+.line, .word, span {
+  display: inline; /* .word {display: inline-block;} Treat words as inline blocks to manage spacing and wrapping */
+
+  margin: 0;
+  padding: 0;
+  font-family: monospace;
+  font-size: 10px; /* Adjust based on your setup */
+  line-height: normal; /* Adjust based on your setup */
+}
+
+.word {
+  white-space: nowrap; /* Prevent words from wrapping */
+}
+
+span.correct-input, span.ghost-text, span.error {
+  display: inline-block; /* Treat characters individually but maintain flow */
+  width: 1ch; /* Use the 'ch' unit for width based on character size */
+}
+.js-typing-area, .user-input, pre, code {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-family: monospace;
+  font-size: 10px;
+  line-height: 120%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }

@@ -77,7 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
       let lineHtmlContent = '';
       let wordHtmlContent = '';
       let extraSpacesHandled = false;
-  
+      let isLineBlank = true; // Assume the line is blank until proven otherwise
+
       for (let i = 0; i < phraseLine.length; i++) {
         const phraseChar = phraseLine[i];
         const userInputChar = userInputLine[i] || ' ';
@@ -85,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let displayChar = phraseChar === ' ' ? '&nbsp;' : phraseChar;
   
         if (userInputChar !== undefined) {
+          isLineBlank = false; // There's content in this line
           if (phraseChar === userInputChar || (phraseChar === ' ' && userInputChar === ' ')) {
             classList = ['correct-input'];//ssssr
           } else if (userInputChar !== ' ') {
@@ -136,7 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
           lineHtmlContent += `<span class="error">${displayChar}</span>`;
         });
       }
-  
+      if (isLineBlank) {
+        // If the line is still considered blank, insert a zero-width space
+        lineHtmlContent += `<div class="line">&#8203;</div>`;
+      }
       htmlContent += `<div class="line">${lineHtmlContent}</div>`;
     });
   
@@ -149,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   //   const phraseLines = phrase.split('\n'); // Split phrase into lines
   //   const userInputLines = userInput.split('\n'); // Split user input into lines
-  //   let htmlContent = '';
+  //   let htmlContent = '';s
     
   //   // Process each line
   //   phraseLines.forEach((line, lineIndex) => {
@@ -328,6 +333,7 @@ userInputField.addEventListener('keydown', e => {
     console.log(`After calculation: newPosition=${newPosition}, modifiedValue=${modifiedValue}`);
     // Apply the modified value to the textarea
     userInputField.value = modifiedValue;
+    updateFunction();
       setTimeout(() => {
         userInputField.setSelectionRange(newPosition, newPosition);
      

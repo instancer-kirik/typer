@@ -109,21 +109,20 @@ def render(assigns) do
       <div id="phrase-data" data-phrase-text={@phrase.text}></div>
       <div  phx-update="ignore" id="js-text-area" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
       <div class="js-typing-area" style="position: relative;">
-      <pre style="margin: 0; padding: 0; box-sizing: border-box; font-family: monospace; font-size: 10px; line-height: 120%; width: 100%; height: 100%;">
-      <code style="white-space: pre-wrap;" id="js-typing-area"></code></pre>
+      <pre style="position: absolute; top 0; left: 0; width: 100%; height: 100%; margin: 0; padding: 0; box-sizing: border-box; font-family: monospace; font-size: 10px; line-height: 120%; width: 100%; height: 100%;">
+      <code style="position: absolute; top 0; left: 0; width: 100%; height: 100% white-space: pre-wrap;" id="js-typing-area"></code></pre>
       </div>
       </div>
     <form class="typing-area" phx-change="input" phx-submit="submit" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;">
     <textarea class="user-input" id="code-editor" name="user_input" phx-hook = "AutoFocus" phx-debounce="1000"
-
-    style="background-color: transparent; color: white; border: none; width: 100%; height: 100%; font-family: monospace; font-size: 10px; line-height: 120%; box-sizing: border-box;"></textarea>
+    style="background-color: transparent; color: transparent; border: none; width: 100%; height: 100%; font-family: monospace; font-size: 10px; line-height: 120%; box-sizing: border-box;"></textarea>
       </form>
 
 
     </div>
     <div class="elixir-content">
-      <div id="typing-area">
-        <pre ><code class="typing-area2" ><%= render_typing_area(@phrase, @user_input) %></code></pre>
+      <div id="elixir-content">
+        <pre ><code class="elixir-content" ><%= render_typing_area(@phrase, @user_input) %></code></pre>
       </div>
     </div>
   </div>
@@ -140,13 +139,13 @@ def render(assigns) do
     |> Enum.map(fn
       {input_char, expected_char} when input_char == expected_char -> {input_char, true}
       {input_char, _expected_char} -> {input_char, false}
-      nil -> {" ", false} # Adjust as needed for handling end of inputw
+      nil -> {" ", false} # Adjust as needed for handling end of inputs
     end)
   end
 
   defp split_into_lines(phrase) do
     phrase
-    |> String.split("\n") # Split by newline character
+    |> String.split("\n") # Split by newline characters
   end
   defp render_typing_area(phrase, user_input) do
     phrase_lines = split_into_lines(phrase.text)
