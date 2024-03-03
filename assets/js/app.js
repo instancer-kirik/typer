@@ -56,8 +56,10 @@ Hooks.HashCalculator = {
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         console.log(`Hash calculated: ${hashHex}`);
-        const hashResult = document.getElementById('hashResults');
+        const hashResult = document.getElementById('custom_phrase');
         hashResult.textContent = hashHex;
+        const hashResult2 = document.getElementById('custom_phrase_hidden');
+        hashResult2.value = hashHex;
         this.pushEvent("hash_calculated", {hash: hashHex, fileName: file.name});
         // liveSocket.pushEvent("#content", "hash_calculated", {hash: hashHex, fileName: file.name});
       }).catch(error => {

@@ -90,45 +90,32 @@ defmodule TyperWeb.HomeLive do
             # Handle the error case without redirection
             {:noreply, socket}
         end
-      end
+    end
     def handle_event("show-phrase", %{"id" => phrase_id}, socket) do
         {:noreply, push_navigate(socket, to: Routes.phrase_path(socket, :show,phrase_id))}
-      end
-      def handle_event("validate", %{"custom_phrase" => custom_phrase}, socket) do
-        disable_submit = custom_phrase == "" or custom_phrase == nil
-        {:noreply, assign(socket, disable_submit: disable_submit)}
-      end
-      def handle_event("set_custom_phrase", %{"custom_phrase" => custom_phrase}, socket) do
-        case handle_custom_phrase(custom_phrase) do
-          {:ok, custom_phrase_text} ->
-            # Custom phrase is valid. Assign it to the socket to be used in the LiveView template.
-            # Ensure `custom_phrase_text` is the plain text of the custom phrase.
-            {:noreply, assign(socket, phrase: custom_phrase_text, validation_errors: [])}
+    end
+    def handle_event("validate", %{"custom_phrase" => custom_phrase}, socket) do
+      disable_submit = custom_phrase == "" or custom_phrase == nil
+      {:noreply, assign(socket, disable_submit: disable_submit)}
+    end
 
-          {:error, error_map} ->
-            # Custom phrase is invalid. Assuming `handle_custom_phrase` returns an error map directly.
-            # If it's actually a changeset, you might need to adjust this part.
-            errors = translate_errors(error_map) # Adjust based on actual error structure
-            {:noreply, assign(socket, validation_errors: errors)}
-        end
-      end
-      def handle_event("delete-phrase", %{"id" => phrase_id}, socket) do
-        # Assuming you have a function `delete_phrase/1` in your `Game` context
-        Game.delete_phrase(phrase_id)
+    def handle_event("delete-phrase", %{"id" => phrase_id}, socket) do
+      # Assuming you have a function `delete_phrase/1` in your `Game` context
+      Game.delete_phrase(phrase_id)
 
-        # Update the list of phrases after deletions
-        phrases = Game.list_phrases()
-        {:noreply, assign(socket, streams: %{phrases: phrases})}
-      end
-      def handle_event("toggle_dark_mode", _params, socket) do
-        # Trigger client-side navigation to the controller action
-        {:noreply, push_redirect(socket, to: "/toggle_dark_mode")}
-      end
+      # Update the list of phrases after deletions
+      phrases = Game.list_phrases()
+      {:noreply, assign(socket, streams: %{phrases: phrases})}
+    end
+    def handle_event("toggle_dark_mode", _params, socket) do
+      # Trigger client-side navigation to the controller action
+      {:noreply, push_redirect(socket, to: "/toggle_dark_mode")}
+    end
 
-      @impl true
-      def handle_event("navigate_to_hasher", _params, socket) do
-        {:noreply, push_redirect(socket, to: Routes.hash_slinging_hasher_path(socket, :index))}
-      end
+    @impl true
+    def handle_event("navigate_to_hasher", _params, socket) do
+      {:noreply, push_redirect(socket, to: Routes.hash_slinging_hasher_path(socket, :index))}
+    end
       # Helper function to translate errors, adjust as necessary based on your error structure.
       defp translate_errors(error_map) do
         # If `error_map` is structured like `%{text: ["error message"]}`, then you can directly use it.

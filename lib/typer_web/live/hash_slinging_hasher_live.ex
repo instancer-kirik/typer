@@ -4,7 +4,7 @@ defmodule TyperWeb.HashSlingingHasherLive do
 
   # alias Typer.Game.Phrase
   alias Typer.HashData
-  #alias TyperWeb.Router.Helpers, as: Routes
+  alias TyperWeb.Router.Helpers, as: Routes
 
 
   @impl true
@@ -24,17 +24,29 @@ defmodule TyperWeb.HashSlingingHasherLive do
             <input type="file" id="fileInput" multiple>
             <button type="button" class="buttonly" id="calculateHashButton" phx-hook="HashCalculator">Analysis</button>
         </form>
-        <div id="hashResults" phx-update="ignore"></div>
+        <div id="custom_phrase" phx-update="ignore"></div>
+
+
+
+        <form id="customPhraseForm" action="/set_custom_phrase" method="post">
+          <input type="hidden" name="custom_phrase" id="custom_phrase_hidden" value={@custom_phrase}>
+          <input type="hidden" name="_csrf_token" value={@csrf_token} />
+          <button type="submit" class="buttonly">Type the Hash</button>
+        </form>
+
+
+
         <br>
         <div id="message">
           <%= @message %>
         </div>
+
     </div>
     """
   end
 @impl true
 def handle_event("hash_calculated", %{"hash" => hash, "fileName" => file_name} = _params, socket) do
-  # Assuming `current_user.id` is available. Adjust accordingly if not.
+  # Assuming `current_user.id` is available. Adjust accordingly if not.<form phx-change="validate" action="/set_custom_phrase" method="post">   </form>disabled={@disable_submit}
   %{current_user: user} = socket.assigns
   hash_params = %{
     hash: hash,
@@ -44,14 +56,14 @@ def handle_event("hash_calculated", %{"hash" => hash, "fileName" => file_name} =
   # IO.inspect(hash_params, label: "AAAAAAAAAAAAA")
   case HashData.save_hash(hash_params) do
     {:ok, _hash_data} ->
-      {:noreply, assign(socket, message: "Built different. Saved successfully.")}
+      {:noreply, assign(socket, message: "Built different. Save successful." ,custom_phrase: hash, disable_submit: false)}
     {:error, {:exists, existing_file_name}} ->
       message = if file_name == existing_file_name do
           "Unfortunately not built different. "<> Phoenix.HTML.safe_to_string(Phoenix.HTML.html_escape(existing_file_name))<> " is already here. Try again after editing."
         else
           "Unfortunately not built different.<br>Seen: "<> Phoenix.HTML.safe_to_string(Phoenix.HTML.html_escape(existing_file_name))
         end
-      {:noreply, assign(socket, message: Phoenix.HTML.raw(message))}
+      {:noreply, assign(socket, message: Phoenix.HTML.raw(message), custom_phrase: hash, disable_submit: false)}
     # {:error, {:exists, existing_file_name}} ->
     #   message = if file_name == existing_file_name do
     #   message = "Unfortunately not built different.<br> Seen: "<> Phoenix.HTML.safe_to_string(Phoenix.HTML.html_escape(existing_file_name))
@@ -64,7 +76,7 @@ def handle_event("hash_calculated", %{"hash" => hash, "fileName" => file_name} =
         # Here, you know changeset is an Ecto changeset, so you can safely access changeset.errors
         # Adapt this part according to how you want to display changeset errors
         error_message = "There was an error saving the hash: " <> inspect(changeset.errors)
-        {:noreply, assign(socket, message: error_message)}
+        {:noreply, assign(socket, message: error_message,custom_phrase: hash, disable_submit: false)}
   end
 end
 
@@ -90,6 +102,7 @@ end
 #       {:noreply, assign(socket, message: "AAAAAAAThere was an error saving the hash.")}
 #   end
 # end
+
 def handle_event(event, params, socket) do
   IO.inspect(event, label: "Event")
   IO.inspect(params, label: "Params")
@@ -114,11 +127,11 @@ end
       # |> to_form(as: "hash")
       socket=
           socket
-          |> assign( loading: false,csrf_token: csrf_token, dark_mode: dark_mode, message: nil)
+          |> assign( loading: false,csrf_token: csrf_token, dark_mode: dark_mode, message: nil, disable_submit: true, custom_phrase: "")
           #|> stream(:phrases, Game.list_phrases())
    {:ok, socket}
       else
-          {:ok, assign(socket, loading: true,csrf_token: csrf_token, dark_mode: dark_mode, message: nil)}
+          {:ok, assign(socket, loading: true,csrf_token: csrf_token, dark_mode: dark_mode, message: nil, disable_submit: true, custom_phrase: "")}
       end
   end
 
