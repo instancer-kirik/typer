@@ -34,7 +34,70 @@ Hooks.AutoFocus = {
     this.el.focus();
   }
 };
+Hooks.HashCalculator = {
+  mounted() {
+    console.log("HashCalculator mounted. Initializing hash calculation script.");
+    this.el.addEventListener('click', () => {
+      const fileInput = document.getElementById('fileInput');
+      const files = fileInput.files;
+      if (files.length === 0) {
+        console.log("No file selected.");
+        alert("Please select a file.");
+        return;
+      }
+      console.log(`File selected: ${files[0].name}`);
 
+      const file = files[0];
+      file.arrayBuffer().then(arrayBuffer => {
+        console.log("File loaded into array buffer. Calculating hash.");
+        return crypto.subtle.digest('SHA-256', arrayBuffer);
+      }).then(hashBuffer => {
+        console.log("Hash calculated. Converting to hex string.");
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        console.log(`Hash calculated: ${hashHex}`);
+        const hashResult = document.getElementById('hashResults');
+        hashResult.textContent = hashHex;
+        this.pushEvent("hash_calculated", {hash: hashHex, fileName: file.name});
+        // liveSocket.pushEvent("#content", "hash_calculated", {hash: hashHex, fileName: file.name});
+      }).catch(error => {
+        console.error("Error calculating hash: ", error);
+      });
+    });
+  }
+};
+// const calculateHashButton = document.getElementById('calculateHashButton');
+//   if (calculateHashButton) {
+//     console.log("Calculate Hash Button found. Adding event listener.");
+//     calculateHashButton.addEventListener('click', function() {
+//       const fileInput = document.getElementById('fileInput');
+//       const files = fileInput.files;
+//       if (files.length === 0) {
+//         console.log("No file selected.");
+//         alert("Please select a file.");
+//         return;
+//       }
+//       console.log(`File selected: ${files[0].name}`);
+
+//       const file = files[0];
+//       file.arrayBuffer().then(arrayBuffer => {
+//         console.log("File loaded into array buffer. Calculating hash.");
+//         return crypto.subtle.digest('SHA-256', arrayBuffer);
+//       }).then(hashBuffer => {
+//         console.log("Hash calculated. Converting to hex string.");
+//         const hashArray = Array.from(new Uint8Array(hashBuffer));
+//         const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+//         console.log(`Hash calculated: ${hashHex}`);
+        
+//         // Ensure `liveSocket` is correctly initialized and accessible here
+//         liveSocket.pushEventTo("#content", "hash_calculated", {hash: hashHex, fileName: file.name});
+//       }).catch(error => {
+//         console.error("Error calculating hash: ", error);
+//       });
+//     });
+//   } else {
+//     console.log("Calculate Hash Button not found.");
+//   }
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {params: {_csrf_token: csrfToken}, hooks: Hooks})
@@ -54,6 +117,10 @@ liveSocket.connect()
 
 // Initialize the JS managed area after the document is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
+  
+
+   
+  
   let elapsedTime = 0; // Initialize elapsedTime to capture the durationr
   let startTime;
   let timerStarted = false;
@@ -78,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let wordHtmlContent = '';
       let extraSpacesHandled = false;
       let isLineBlank = true; // Assume the line is blank until proven otherwise
-
+      let isLineStart = true; // Flag to track the start of a linea
       for (let i = 0; i < phraseLine.length; i++) {
         const phraseChar = phraseLine[i];
         const userInputChar = userInputLine[i] || ' ';
@@ -86,16 +153,26 @@ document.addEventListener('DOMContentLoaded', () => {
         let displayChar = phraseChar === ' ' ? '&nbsp;' : phraseChar;
   
         if (userInputChar !== undefined) {
-          isLineBlank = false; // There's content in this line
+          
           if (phraseChar === userInputChar || (phraseChar === ' ' && userInputChar === ' ')) {
-            classList = ['correct-input'];//ssssr
+            classList = ['correct-input'];
+            isLineBlank = false; // There's content in this line
           } else if (userInputChar !== ' ') {
             classList = ['error'];
+            isLineBlank = false; // There's content in this line
             displayChar = userInputChar === ' ' ? '▄' : userInputChar; // Use ▄ for error spaces
           }
         }
+         // Handle the zero-width space for the first character in a line or after a newline
+      
   // Append the character to the word HTML, handling spaces as their own "word"
         if (phraseChar === ' ') {
+          if (isLineStart) {
+            displayChar = '&#8203;'; // Use zero-width space if the actual space is the first character
+            isLineStart = false; // Reset flag after handling the first character'
+          } else{
+            isLineStart = false; // Any non-space character means we're no longer at the start
+          }
           // Close the previous word and start a new span for the space
           lineHtmlContent += `<span class="word">${wordHtmlContent}</span>`;
           wordHtmlContent = ''; // Reset word HTML content
@@ -154,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   //   const phraseLines = phrase.split('\n'); // Split phrase into lines
   //   const userInputLines = userInput.split('\n'); // Split user input into lines
-  //   let htmlContent = '';s
+  //   let htmlContent = '';ss
     
   //   // Process each line
   //   phraseLines.forEach((line, lineIndex) => {

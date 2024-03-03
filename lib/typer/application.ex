@@ -10,6 +10,7 @@ defmodule Typer.Application do
     children = [
       TyperWeb.Telemetry,
       Typer.Repo,
+
       {DNSCluster, query: Application.get_env(:typer, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Typer.PubSub},
       # Start the Finch HTTP client for sending emails

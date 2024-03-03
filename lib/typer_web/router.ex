@@ -1,4 +1,5 @@
 defmodule TyperWeb.Router do
+
   use TyperWeb, :router
 
   import TyperWeb.UserAuth
@@ -20,8 +21,11 @@ defmodule TyperWeb.Router do
   scope "/", TyperWeb do
     pipe_through :browser
     live "/phrases/:id", PhraseLive, :show, as: :phrase
+
     post "/set_custom_phrase", SessionController, :set_custom_phrase
     get "/toggle_dark_mode", SessionController, :toggle_dark_mode
+    post "/add-hash", SessionController, :add_hash
+
   end
 
   # Other scopes may use custom stacks.
@@ -68,7 +72,7 @@ defmodule TyperWeb.Router do
     live_session :require_authenticated_user,
       on_mount: [{TyperWeb.UserAuth, :ensure_authenticated}] do
       live "/home", HomeLive, :index
-
+      live "/hash_slinging_hasher", HashSlingingHasherLive, :index
       live "/users/settings", UserSettingsLive, :edit
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
     end

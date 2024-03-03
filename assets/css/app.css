@@ -274,7 +274,7 @@ pre code {
   white-space: nowrap; /* Prevent words from wrapping */
 }
 
-span.correct-input, span.ghost-text, span.error {
+span.ghost-text, span.error {
   display: inline-block; /* Treat characters individually but maintain flow */
   width: 1ch; /* Use the 'ch' unit for width based on character size */
 }

@@ -15,4 +15,11 @@ defmodule TyperWeb.SessionController do
     |> put_session("dark_mode", new_mode)
     |> redirect(to: Routes.home_path(conn, :index))
   end
+  def add_hash(conn, %{"fileName" => file_name, "hash" => hash_value}) do
+    # Handle the form submission.
+    # For example, you might save the hash value and file name to the database.
+
+    # After handling the submission, redirect to a confirmation page or render a response.
+    text(conn, "Hash received: #{hash_value} for file #{file_name}")
+  end
 end

@@ -23,7 +23,7 @@ defmodule TyperWeb.HomeLive do
             <div class = "dark-mode">
             <h1 class="text-2x1">Typer</h1>
             <h1><%= "#{@dark_mode}" %></h1>
-
+            <.button phx-click="navigate_to_hasher">Go to Hash Slinging Hasher</.button>
             <.button type="button" phx-click={JS.dispatch("toogle-darkmode")}>DARKMODE</.button>
             <a href="/toggle_dark_mode" class="dark-mode-toggle">Toggle Dark Mode</a>
             <.button type="button" phx-click={show_modal("new-phrase-modal")}>Create Phrase</.button>
@@ -125,6 +125,10 @@ defmodule TyperWeb.HomeLive do
         {:noreply, push_redirect(socket, to: "/toggle_dark_mode")}
       end
 
+      @impl true
+      def handle_event("navigate_to_hasher", _params, socket) do
+        {:noreply, push_redirect(socket, to: Routes.hash_slinging_hasher_path(socket, :index))}
+      end
       # Helper function to translate errors, adjust as necessary based on your error structure.
       defp translate_errors(error_map) do
         # If `error_map` is structured like `%{text: ["error message"]}`, then you can directly use it.
