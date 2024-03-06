@@ -2,7 +2,7 @@ defmodule Typer.HashData do
   alias Typer.Repo
   alias Typer.Game.Hash
 
-  import Ecto.Query
+
   def save_hash(attrs) do
 
     case attrs[:hash] do

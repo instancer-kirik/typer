@@ -1,0 +1,109 @@
+
+.js-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; /* or specific width as needed */
+    height: 400px; /* Adjust based on content */
+    z-index: 1;
+  }
+  .js-typing-area, .user-input {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  .user-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; /* Ensure it covers the container width */
+    min-height: 100%;
+    z-index: 0;
+    color: transparent;
+    border: none;
+    outline: none;
+    font-family: monospace;
+    font-size: 10px;
+    line-height: 120%;
+    box-sizing: border-box; /* Ensure padding and border are included in width/height */
+    padding: 0; /* Remove padding */
+    margin: 0; /* Remove margin */
+    caret-color: rgb(1, 68, 12);
+    letter-spacing: normal; /* Ensure letter spacing is consistent */
+    word-spacing: normal; /* Ensure word spacing is consistent */
+  }
+  .typing-area{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; /* Ensure it covers the container width */
+    min-height: 100%; /* Adjust if you have a specific height in mind or use 100% for full container height */
+    z-index: 2; /* Ensure the textarea is above the content it overlays */
+    background-color: transparent;
+     /* To keep the caret visible */
+    border: none;
+    outline: none;
+    font-family: monospace;
+    font-size: 10px;
+    line-height: 120%;
+    letter-spacing: normal; /* Ensure letter spacing is consistent */
+    word-spacing: normal; /* Ensure word spacing is consistent */
+    margin: 0;
+    padding: 0; /* Adjust as necessary, but keep them the same */
+    box-sizing: border-box;
+  }
+  .typing-area2{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; /* Ensure it covers the container width */
+    min-height: 100%; /* Adjust if you have a specific height in mind or use 100% for full container height */
+    z-index: 2; /* Ensure the textarea is above the content it overlays */
+   
+    border: none;
+    outline: none;
+    font-family: monospace;
+    font-size: 10px;
+    line-height: 120%;
+    letter-spacing: normal; /* Ensure letter spacing is consistent */
+    word-spacing: normal; /* Ensure word spacing is consistent */
+    margin: 0;
+    padding: 0; /* Adjust as necessary, but keep them the same */
+    box-sizing: border-box;
+  }
+
+.line {
+    /* display: block;Ensures each .line starts on a new line */
+   white-space: pre-wrap; /* Maintains whitespace but allows normal wrapping within the .line */
+    /* margin-bottom: 1em;Adds space between lines, adjust as needed */
+ }
+ .line, .word, span {
+   display: inline; /* .word {display: inline-block;} Treat words as inline blocks to manage spacing and wrapping */
+ 
+   margin: 0;
+   padding: 0;
+   font-family: monospace;
+   font-size: 10px; /* Adjust based on your setup */
+   line-height: normal; /* Adjust based on your setup */
+ }
+ 
+ .word {
+   display: inline-block;
+   white-space: nowrap; /* Prevent words from wrapping */
+ }
+ 
+ span.ghost-text, span.error {
+   display: inline-block; /* Treat characters individually but maintain flow */
+   width: 1ch; /* Use the 'ch' unit for width based on character size */
+ }
+ .js-typing-area, .user-input, pre, code {
+   position: absolute;
+   top: 0;
+   left: 0;
+   font-family: monospace;
+   font-size: 10px;
+   line-height: 120%;
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+ }

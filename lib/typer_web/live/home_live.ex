@@ -117,11 +117,11 @@ defmodule TyperWeb.HomeLive do
       {:noreply, push_redirect(socket, to: Routes.hash_slinging_hasher_path(socket, :index))}
     end
       # Helper function to translate errors, adjust as necessary based on your error structure.
-      defp translate_errors(error_map) do
-        # If `error_map` is structured like `%{text: ["error message"]}`, then you can directly use it.
-        # If it's an Ecto.Changeset, you would use `Ecto.Changeset.traverse_errors`.
-        Map.get(error_map, :text, [])
-      end
+      # defp translate_errors(error_map) do
+      #   # If `error_map` is structured like `%{text: ["error message"]}`, then you can directly use it.
+      #   # If it's an Ecto.Changeset, you would use `Ecto.Changeset.traverse_errors`.
+      #   Map.get(error_map, :text, [])
+      # end
 
 
     def handle_custom_phrase(custom_phrase_text) do

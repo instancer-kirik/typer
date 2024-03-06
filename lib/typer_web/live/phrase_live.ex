@@ -98,31 +98,41 @@ def render(assigns) do
   #   position: relative; /* Positioned relative to its normal position */
   #   z-index: 1; /* Ensure it's below the input textarea */
   # }asr
+
+  # <div class="js-content" style="position: relative;">
+  #   <!-- JavaScript Managed Area  -->
+  #
+  #     <div  phx-update="ignore" id="js-text-area" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+  #     <div class="js-typing-area" style="position: relative;">
+  #     <pre style="position: absolute; top 0; left: 0; width: 100%; height: 100%; margin: 0; padding: 0; box-sizing: border-box; font-family: monospace; font-size: 10px; line-height: 120%; width: 100%; height: 100%;">
+  #     <code style="position: absolute; top 0; left: 0; width: 100%; height: 100% white-space: pre-wrap;" id="js-typing-area"></code></pre>
+  #     </div>
+  #     </div>
+  #   <form class="typing-area" phx-change="input" phx-submit="submit" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;">
+  #   <textarea class="user-input" id="code-editor" name="user_input" phx-hook = "AutoFocus" phx-debounce="1000"
+  #   style="background-color: transparent; color: transparent; border: none; width: 100%; height: 100%; font-family: monospace; font-size: 10px; line-height: 120%; box-sizing: border-box;"></textarea>
+  #     </form>   # <div id="background-display" phx-update="ignore" style="position: absolute; z-index: 1; pointer-events: none;">
+
   ~H"""
 
   <div class="layout-container" >
-  <div  phx-update="ignore" id="timer-box">
-  <div id="js-timer">READY</div>
-  </div>
-    <div class="js-content" style="position: relative;">
-    <!-- JavaScript Managed Area  -->
-      <div id="phrase-data" data-phrase-text={@phrase.text}></div>
-      <div  phx-update="ignore" id="js-text-area" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-      <div class="js-typing-area" style="position: relative;">
-      <pre style="position: absolute; top 0; left: 0; width: 100%; height: 100%; margin: 0; padding: 0; box-sizing: border-box; font-family: monospace; font-size: 10px; line-height: 120%; width: 100%; height: 100%;">
-      <code style="position: absolute; top 0; left: 0; width: 100%; height: 100% white-space: pre-wrap;" id="js-typing-area"></code></pre>
+  <div id="phrase-data" data-phrase-text={@phrase.text}></div>
+    <div  phx-update="ignore" id="timer-box">
+      <div id="js-timer">READY</div>
       </div>
+
+    <!-- Dynamically update this content based on input -->
+
+    <!-- Transparent contenteditable for user input -->
+
+      <div id="editable-container" phx-update="ignore" contenteditable="true" style="position: relative; z-index: 2; background: transparent;">
+     <span id="remaining-text">Hello, world! This is a test.\n\tAnd an indentation test.</span>
+
       </div>
-    <form class="typing-area" phx-change="input" phx-submit="submit" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;">
-    <textarea class="user-input" id="code-editor" name="user_input" phx-hook = "AutoFocus" phx-debounce="1000"
-    style="background-color: transparent; color: transparent; border: none; width: 100%; height: 100%; font-family: monospace; font-size: 10px; line-height: 120%; box-sizing: border-box;"></textarea>
-      </form>
-
-
-    </div>
+    <br>
     <div class="elixir-content">
       <div id="elixir-content">
-        <pre ><code class="elixir-content" ><%= render_typing_area(@phrase, @user_input) %></code></pre>
+          <pre ><code class="elixir-content" ><%= render_typing_area(@phrase, @user_input) %></code></pre>
       </div>
     </div>
   </div>
@@ -132,16 +142,16 @@ def render(assigns) do
 
   end
 
-  defp compare_input(user_input, phrase) do
-    user_input
-    |> String.graphemes()
-    |> Enum.zip(String.graphemes(phrase.text))
-    |> Enum.map(fn
-      {input_char, expected_char} when input_char == expected_char -> {input_char, true}
-      {input_char, _expected_char} -> {input_char, false}
-      nil -> {" ", false} # Adjust as needed for handling end of inputs
-    end)
-  end
+  # defp compare_input(user_input, phrase) do
+  #   user_input
+  #   |> String.graphemes()
+  #   |> Enum.zip(String.graphemes(phrase.text))
+  #   |> Enum.map(fn
+  #     {input_char, expected_char} when input_char == expected_char -> {input_char, true}
+  #     {input_char, _expected_char} -> {input_char, false}
+  #     nil -> {" ", false} # Adjust as needed for handling end of inputs
+  #   end)
+  # end
 
   defp split_into_lines(phrase) do
     phrase
@@ -252,8 +262,7 @@ def render(assigns) do
   #     next_line_start_pos + 1 # +1 to move to the start of the next line
   #   end
   # end
-  defp extract_safe_content({:safe, content}), do: content
-  defp extract_safe_content(other), do: other
+  # defp extract_safe_content({:safe, content}), do: content
   @impl true
   def handle_event("process_input", %{"input" => new_input}, socket) do
     error_positions = calculate_error_positions(socket.assigns.phrase.text, new_input)

@@ -4,7 +4,7 @@ defmodule TyperWeb.HashSlingingHasherLive do
 
   # alias Typer.Game.Phrase
   alias Typer.HashData
-  alias TyperWeb.Router.Helpers, as: Routes
+  # alias TyperWeb.Router.Helpers, as: Routes
 
 
   @impl true
