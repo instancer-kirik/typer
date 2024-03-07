@@ -126,7 +126,7 @@ def render(assigns) do
     <!-- Transparent contenteditable for user input -->
 
       <div id="editable-container" phx-update="ignore" contenteditable="true" style="position: relative; z-index: 2; background: transparent;">
-     <span id="remaining-text">Hello, world! This is a test.\n\tAnd an indentation test.</span>
+     <span id="remaining-text">{@phrase.text}</span>
 
       </div>
     <br>

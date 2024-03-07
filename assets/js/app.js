@@ -152,52 +152,102 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function handleCharacterInput(char) {
-      //if (typedLength < originalText.length) {
       const correctChar = phraseText.charAt(typedLength);
-      const isCorrect = char === correctChar;
-      appendCharBeforeRemainingText(char, isCorrect);
-      typedLength++;
-      // Update remaining text
-      updateRemainingText();
+      // Check for special characters like tabs (\t) that need to be handled differently
+      const isCorrect = char === correctChar || (correctChar === '\n' && char === 'Enter') || (correctChar === '\t' && char === 'Tab');
+      
+      if (isCorrect) {
+        // Handle newline characters and tab characters for indentation
+        if (correctChar === '\n') {
+          appendNewLine();
+          // Automatically append indentation after new line if next characters are tabs or spaces
+          appendIndentation();
+        } else if (correctChar === '\t') {
+          appendTab();
+        } else {
+          appendChar(char, true);
+        }
+        typedLength++;
+        updateRemainingText();
+      } else {
+        // Optionally handle incorrect input
+      }
     }
-
-    function appendCharBeforeRemainingText(char, isCorrect) {
+    
+function getIndentationLevel(line) {
+  // Matches leading spaces in the line
+  const result = line.match(/^(\s*)/);
+  return result ? result[1].length : 0;
+}
+    function appendNewLine(isCorrect) {
+      const newLineSpan = document.createElement('span');
+      newLineSpan.innerHTML = '&#x23ce;'; // Represents a return symbol, adjust as needed
+      newLineSpan.className = isCorrect ? 'correct' : 'incorrect';
+      remainingTextSpan.parentNode.insertBefore(newLineSpan, remainingTextSpan);
+    }
+    function appendTab() {
+      const tabSpan = document.createElement('span');
+      tabSpan.textContent = '\t'; // Visual representation of a tab, adjust as needed
+      tabSpan.className = 'correct'; // Assuming tab is correct for simplicity
+      remainingTextSpan.parentNode.insertBefore(tabSpan, remainingTextSpan);
+    }
+    function appendIndentation() {
+      let nextChars = phraseText.substring(typedLength);
+      let match = nextChars.match(/^(\s+)/); // Regex to capture leading spaces or tabs
+      
+      if (match) {
+        let indentation = match[1];
+        for (let i = 0; i < indentation.length; i++) {
+          let char = indentation[i];
+          if (char === '\t') {
+            appendTab();
+          } else {
+            appendChar(' ', true); // Assuming space is correct for simplicity
+          }
+          typedLength++;
+        }
+      }
+    }
+    
+    function appendChar(char, isCorrect) {
       const charSpan = document.createElement('span');
       charSpan.textContent = char;
       charSpan.className = isCorrect ? 'correct' : 'incorrect';
-      editableContainer.insertBefore(charSpan, remainingTextSpan);
-      //editableContainer.insertBefore(charSpan, editableContainer.childNodes[typedLength]);
-   
+      remainingTextSpan.parentNode.insertBefore(charSpan, remainingTextSpan);
     }
+    
     function updateRemainingText() {
-      const newText = originalText.substring(typedLength);
-      remainingTextSpan.textContent = newText; // Update visually if needed or use for reference
+      let newText = phraseText.substring(typedLength).replace(/\n/g, '<br>'); // Convert newline characters to <br> for display
+      remainingTextSpan.innerHTML = newText; // Use innerHTML to interpret <br> tags
     }
     function handleBackspace() {
       if (typedLength > 0) {
         typedLength--;
-        editableContainer.removeChild(editableContainer.childNodes[typedLength]);
+        // editableContainer.removeChild(editableContainer.childNodes[typedLength+1]);
+        // updateRemainingText();
+        let removeIndex = typedLength; // Adjust if your indexing needs refinement
+        let childNodes = Array.from(editableContainer.childNodes);
+        let targetNode = childNodes.find((node, index) => index === removeIndex);
+        if (targetNode) editableContainer.removeChild(targetNode);
         updateRemainingText();
+      
       }
     }
 
-    function updateRemainingText() {
-      const newText = phraseText.substring(typedLength);
-      remainingTextSpan.textContent = newText; // Update visually if needed or use for reference
-    }
-
-    // function handleBackspace() {
-    //   const lastCharSpan = remainingTextSpan.previousSibling;
-    //   if (lastCharSpan) {
-    //     remainingTextContent = lastCharSpan.textContent + remainingTextContent;
-    //     remainingTextSpan.textContent = remainingTextContent;
-    //     editableContainer.removeChild(lastCharSpan);
-    //   }
-    // }
-
     function handleEnter() {
-      // Implement newline handling logic as needed
-    }
+
+      const currentLine = getCurrentLine(editableContainer.textContent, typedLength);
+      const indentationLevel = getIndentationLevel(currentLine);
+    
+      // Append a newline
+      appendChar('\n', true);
+    
+      // Append the correct number of spaces for indentation
+      for (let i = 0; i < indentationLevel; i++) {
+        appendChar(' ', true); // Assuming spaces for indentation
+      }
+    
+}
   // const lines = phraseText.split('\n'); // For lines
   // //if (!userInputField ) return;
 
