@@ -56,6 +56,7 @@ defmodule TyperWeb.PhraseLive do
   # end
   @impl true
 def render(assigns) do
+  IO.inspect(assigns[:user_input], label: "Rendering with user_input")
   elapsed = elapsed_time(assigns.start_time, assigns.end_time)
   assigns = assign(assigns, :elapsed, elapsed)
   #is_completed = assigns.user_input == assigns.phrase.text
@@ -125,8 +126,8 @@ def render(assigns) do
 
     <!-- Transparent contenteditable for user input -->
 
-      <div id="editable-container" phx-update="ignore" contenteditable="true" style="position: relative; z-index: 2; background: transparent;">
-     <span id="remaining-text">{@phrase.text}</span>
+      <div id="editable-container" name="user_input" phx-hook="EditableContainer" phx-update="ignore" contenteditable="true" style="position: relative; z-index: 2; background: transparent; white-space: pre-wrap;">
+     <span style = "display: inline;" id="remaining-text"><%= render_typing_area(@phrase, @user_input) %></span>
 
       </div>
     <br>
@@ -154,11 +155,16 @@ def render(assigns) do
   # end
 
   defp split_into_lines(phrase) do
+
     phrase
     |> String.split("\n") # Split by newline characters
   end
   defp render_typing_area(phrase, user_input) do
-    phrase_lines = split_into_lines(phrase.text)
+
+    IO.inspect(user_input, label: "AAA")
+    IO.inspect(phrase, label: "BBB")
+
+    phrase_lines = split_into_lines(phrase.text |> String.trim())
     user_input_lines = split_into_lines(user_input)
 
     rendered_lines = Enum.with_index(phrase_lines)
@@ -178,7 +184,7 @@ def render(assigns) do
     # Example:
     phrase_graphemes = String.graphemes(phrase_line)
     input_graphemes = String.graphemes(user_input_line)
-    IO.inspect( phrase_graphemes, label: "rendering ");
+    #IO.inspect( phrase_graphemes, label: "rendering ");
     Enum.with_index(phrase_graphemes)
     |> Enum.map(fn {char, index} ->
       user_char = Enum.at(input_graphemes, index)
@@ -298,8 +304,11 @@ def render(assigns) do
 
   @impl true
   def handle_event("input", %{"user_input" => input}, socket) do
+
     {:noreply, assign(socket, user_input: input)}
   end
+
+
   # def handle_event("keydown", %{"key" => "Enter", "target" => target}, socket) do
   #   # Calculate new cursor position to move to the start of the next line.
   #   # This is conceptual; your actual implementation may vary.
