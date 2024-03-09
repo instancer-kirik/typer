@@ -126,7 +126,7 @@ def render(assigns) do
 
     <!-- Transparent contenteditable for user input -->
 
-      <div id="editable-container" name="user_input" phx-hook="EditableContainer" phx-update="ignore" contenteditable="true" style="position: relative; z-index: 2; background: transparent; white-space: pre-wrap;">
+      <div id="editable-container" name="user_input" phx-hook="EditableContainer" phx-debounce="1000" phx-update="ignore" contenteditable="true" style="position: relative; z-index: 2; background: transparent; white-space: pre-wrap;">
      <span style = "display: inline;" id="remaining-text"><%= render_typing_area(@phrase, @user_input) %></span>
 
       </div>

@@ -75,16 +75,391 @@ Hooks.HashCalculator = {
     });
   }
 };
-Hooks.EditableContainer = {//if i can just send the typed text and not the whole phrase every time, efficiency stuff
-  mounted() {
-    
-    this.el.addEventListener('keypress', (e) => {
-      
-      this.pushEvent("input", { user_input: this.el.innerText });
-    });
-  }
-};
 
+// Hooks.EditableContainer = {//enter doesn't form the push_event arg right, no \n and indent
+//   mounted() {
+//     let userInput = ''; // Initialize an empty string to keep track of user input
+    
+//     this.el.addEventListener('keydown', (e) => {
+//       // Handle backspace by removing the last character from `userInput`
+//       if (e.key === 'Backspace' && userInput.length > 0) {
+//         e.preventDefault(); // Prevent the default backspace behavior
+//         userInput = userInput.slice(0, -1); // Remove the last character
+//         this.pushEvent("input", { user_input: userInput }); // Send the updated user input
+//       }
+//     });
+// //in order for this approach to work, I need to calculate the indentations and send them correctly each 
+//     this.el.addEventListener('keypress', (e) => {
+//       // Ignore Enter key here to avoid duplication
+//       if (e.key === 'Enter') {
+//         // Handle new line input separately if needed
+
+
+//         userInput += '\n'; // Append a newline character to `userInput`
+//       } else {
+//         e.preventDefault(); // Prevent the default character input
+//         userInput += e.key; // Append the pressed key to `userInput`
+//       }
+      
+//       this.pushEvent("input", { user_input: userInput }); // Send the updated user input
+//     });
+
+//     // Optional: Implement a function to handle special characters like tabs ('\t') as needed
+//   }
+// };
+// Hooks.EditableContainer = {//if i can just send the typed text and not the whole phrase every time, efficiency stuff
+//   mounted() {
+    
+//     this.el.addEventListener('keypress', (e) => {
+      
+//       this.pushEvent("input", { user_input: this.el.innerText });
+//     });
+//   }
+// };
+
+
+Hooks.EditableContainer = {
+  
+  mounted() {
+     // Initialize timer-related properties
+     this.timerStarted = false;
+     this.elapsedTime = 0;
+     this.startTime = null;
+     this.userInput ="";
+    const phraseData =document.getElementById("phrase-data");
+    if (!phraseData ) return;
+    this.phraseText = phraseData.dataset.phraseText;
+    this.typedLength = 0; // Tracks how many characters have been correctly or incorrectly typeds
+
+    this.editableContainer = document.getElementById('editable-container');
+    this.remainingTextSpan = document.getElementById('remaining-text');
+  
+    this.rightArrow();
+      
+    // Assuming `this.phraseText` is already defined within your hook
+    this.el.addEventListener('keypress', (e) => {
+      this.rightArrow();
+      if (e.key !== 'Enter') {
+        e.preventDefault();
+        this.handleCharacterInput(e.key);
+        
+        this.updateAndPushUserInput();
+      }
+    });
+
+    this.el.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        this.handleBackspace();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        this.handleEnter();
+      }
+      this.updateAndPushUserInput();
+    });
+
+
+  },//mounted
+  
+  handleCharacterInput(char) {
+    
+    const correctChar = this.phraseText.charAt(this.typedLength);
+    // Check for special characters like tabs (\t) that need to be handled differently
+    const isCorrect = char === correctChar || (correctChar === '\n' && char === 'Enter') || (correctChar === '\t' && char === 'Tab');
+    const isEndOfLine = correctChar === '\n' || correctChar === ''; // Check if at the end of a line or text
+    if (isEndOfLine) {
+      //NO OP it just waits for enter
+      // Prevent adding the space directly
+      // appendExtraCharacter(); // Function to append the ▄ character
+      // if(char=== ' '){
+      //   appendChar('▄', true);
+      // }else{
+      //   appendChar(char,false);
+      // }
+      
+    } else {
+      if (isCorrect) {
+        
+        // Handle newline characters and tab characters for indentation
+        if (correctChar === '\n') {
+          this.appendNewLine();
+          // Automatically this.append indentation after new line if next characters are tabs or spaces
+          this.appendIndentation();
+        } else if (correctChar === '\t') {
+          this.appendTab();
+        } else {
+          this.appendChar(char, true);
+        }
+        this.typedLength++;
+        this.moveCaretBeforeRemainingText();
+        this.updateRemainingText();
+      } else {
+        if (correctChar === '\n') {
+          this.appendNewLine();
+          // Automatically this.append indentation after new line if next characters are tabs or spaces
+          this.appendIndentation();
+        } else if (correctChar === '\t') {
+          this.appendTab();
+        } else if(char === " ") {
+          char = "▄";
+          this.appendChar(char, false);
+        
+        }else{
+          this.appendChar(char, false);
+        }
+        this.typedLength++;
+        this.moveCaretBeforeRemainingText();
+        this.updateRemainingText();
+        
+          
+        // Optionally handle incorrect input
+      }
+      
+    }//isNotEndOfLine
+    if (this.phraseText) {
+      console.log('Phrase:', this.phraseText);
+      console.log('User input:', this.userInput);
+
+      if (this.userInput === this.phraseText) {
+        this.stopTimer();
+        // Optionally, invoke any other logic for when the user completes typing
+      } else if (!this.timerStarted&& this.elapsedTime==0) {
+        this.startTimer();
+      }
+    }
+  },
+  appendIndentation() {
+    let nextChars = this.phraseText.substring(this.typedLength);
+    let match = nextChars.match(/^(\s+)/); // Regex to capture leading spaces or tabs
+    
+    if (match) {
+      let indentation = match[1];
+      for (let i = 0; i < indentation.length; i++) {
+        let char = indentation[i];
+        if (char === '\t') {
+          this.appendTab();
+        } else {
+          this.appendChar(' ', true); // Assuming space is correct for simplicity
+        }
+        this.typedLength++;
+      }
+    }
+  },
+  appendChar(char, isCorrect) {
+    const charSpan = document.createElement('span');
+    charSpan.textContent = char;
+    charSpan.className = isCorrect ? 'correct' : 'incorrect';
+    this.remainingTextSpan.parentNode.insertBefore(charSpan, this.remainingTextSpan);
+  },
+  getIndentationLevel(line) {
+    console.log(line);
+    // Matches leading spaces in the line
+    const result = line.match(/^(\s*)/);
+    
+    return result ? result[1].length : 0;
+  },
+  appendNewLine(isCorrect) {
+     const newLineSpan = document.createElement('br');
+    // newLineSpan.innerHTML = '&#x23ce;'; // Represents a return symbol, adjust as needed
+    // newLineSpan.className = isCorrect ? 'correct' : 'incorrect';
+    this.remainingTextSpan.parentNode.insertBefore(newLineSpan, this.remainingTextSpan);
+  },
+  appendTab() {
+    const tabSpan = document.createElement('span');
+    tabSpan.textContent = '    '; // Visual representation of a tab, adjust as needed
+    tabSpan.className = 'correct'; // Assuming tab is correct for simplicity
+    this.remainingTextSpan.parentNode.insertBefore(tabSpan, this.remainingTextSpan);
+  },
+  updateRemainingText() {
+    let html = '';
+  
+    // Split the text into segments of words and whitespace/newlines
+    const segments = this.phraseText.substring(this.typedLength).split(/(\s+)/);
+  
+    // Process each segment, wrapping words in spans and preserving whitespace
+    segments.forEach(segment => {
+      if (segment.match(/\s+/)) {
+        // For segments that are purely whitespace, replace spaces with &nbsp; but leave newlines as <br>
+        html += segment.replace(/\n/g, '<br>');
+      } else {
+        // Wrap words in spans to keep them unbroken; no &nbsp; needed here
+        html += `<span>${segment}</span>`;
+      }
+    });
+  
+    // Set the processed HTML as the innerHTML of the remaining text span
+    
+    this.remainingTextSpan.innerHTML = html;
+    this.verifyAndHandleTimer();
+  },
+  moveCaretBeforeRemainingText(){
+    const sel = window.getSelection();
+    const range = document.createRange();
+    // Position the range right before the this.remainingTextSpan
+          range.setStartBefore(this.remainingTextSpan);
+          range.collapse(true); // Collapse the range to its start point to ensure it doesn't span any content
+          
+          sel.removeAllRanges(); // Clear any existing selections
+          sel.addRange(range); // Add the new range, which positions the caret
+          
+          this.editableContainer.focus(); // Ensure the editable container is focused
+        },
+
+        rightArrow() {
+          // I can just simulate a rightarrow
+    
+          const event = new KeyboardEvent('keydown', {
+            key: "ArrowRight",
+            code: "ArrowRight",
+            keyCode: 39, // Deprecated but included for compatibility
+            which: 39, // Deprecated but included for compatibility
+            bubbles: true,
+            cancelable: true
+          });
+    
+          document.dispatchEvent(event);
+        
+    
+    
+    
+          
+        },
+        handleBackspace() {
+          if (this.typedLength > 0) {
+            this.typedLength--;
+            this.editableContainer.removeChild(this.editableContainer.childNodes[this.typedLength+1]);
+            // updateRemainingText();
+            // let removeIndex = this.typedLength; // Adjust if your indexing needs refinement
+            // let childNodes = Array.from(editableContainer.childNodes);
+            // let targetNode = childNodes.find((node, index) => index === removeIndex);
+            // if (targetNode) editableContainer.removeChild(targetNode);
+            this.updateRemainingText();
+            
+          }
+        },
+        handleEnter() {
+          //const currentLine = getCurrentLine(editableContainer.textContent, this.typedLength);
+          const remainingLineText = this.phraseText.substring(this.typedLength).split('\n')[0];
+          const nextLineStartIndex = this.typedLength + remainingLineText.length + 1; // +1 for the newline character itself
+        
+          // Replace remaining text in the current line with a marker (if any)
+          if (remainingLineText.trim().length > 0) {
+            for (let _char of remainingLineText) {
+              this.appendChar('|', false); // Using • as a marker, marking it as incorrect for visual distinction
+              this.typedLength++;
+            }
+          }
+        
+          // Move to the next line
+          this.appendNewLine(true);
+          this.typedLength++; // Account for the newline character
+        
+          // Handle blank lines by not appending indentation until the next Enter press
+          const nextLineText = this.phraseText.substring(nextLineStartIndex).split('\n')[0];
+          if (nextLineText.trim().length === 0) {
+            // If the next line is blank, simply wait at the end/beginning of the line
+          } else {
+            // For non-blank lines, insert the correct indentation
+            const indentationLevel = this.getIndentationLevel(nextLineText);
+            console.log(indentationLevel);
+            for (let i = 0; i < indentationLevel; i++) {
+              this.appendChar( ' ', true);//nextLineText[i] === '\t' ? '\t' :
+              // appendChar( '&nbsp;', true);
+              // appendChar( '&nbsp;', true);
+              // appendChar( '&nbsp;', true);
+              this.typedLength++;
+              
+            }
+          }
+        
+          this.updateRemainingText();
+          this.moveCaretBeforeRemainingText();
+        },
+        updateAndPushUserInput() {
+          // Obtain the full text including both the user's input and the remaining text
+          let fullText = this.el.innerText;
+      
+          // If you have stored the initial remaining text in this.remainingText upon initialization or another method,
+          // you can use it to trim off the remaining text from the full text.
+          
+          if (this.remainingTextSpan) {
+              // Obtain only the portion of the text that precedes the remaining text
+              let remainingTextIndex = fullText.lastIndexOf(this.remainingTextSpan.innerText);
+              this.userInput = remainingTextIndex >= 0 ? fullText.substring(0, remainingTextIndex) : fullText;
+          } else {
+              // If for some reason the remainingTextSpan is not available, fallback to using the full text.
+              this.userInput = fullText;
+          }
+      
+          // Trim the userInput to remove any leading or trailing whitespace
+          this.userInput = this.userInput.trim();
+      
+          // Now, send the trimmed userInput to the server
+          this.pushEvent("input", { user_input: this.userInput });
+      },
+      
+  startTimer() {
+    if (!this.timerStarted) {
+      this.startTime = new Date();
+      this.timerStarted = true;
+      this.updateTimer(); // Start the smooth timer update
+    }
+  },
+
+  updateTimer() {
+    if (!this.timerStarted) {
+      return; // Stop the timer update loop if the timer is not supposed to be running
+    }
+    const now = new Date();
+    this.elapsedTime = now - this.startTime;
+    const seconds = (this.elapsedTime / 1000).toFixed(2); // Convert to seconds with two decimal places
+
+    const timerDisplay = document.getElementById('js-timer');
+    if (timerDisplay) {
+      timerDisplay.textContent = `JS Elapsed time: ${seconds} seconds`;
+    }
+
+    requestAnimationFrame(this.updateTimer.bind(this)); // Ensure proper context for `this`
+  },
+
+  stopTimer() {
+    if (this.timerStarted) {
+      this.timerStarted = false;
+      const endTime = new Date();
+      this.elapsedTime = endTime - this.startTime; // Update elapsedTime to ensure it's current
+      const seconds = this.elapsedTime / 1000; // Convert to seconds
+      const minutes = seconds / 60; // Convert to minutes
+
+      // Adjust how you calculate totalChars and wordsTyped based on your input handling
+      const totalChars = this.typedLength; // Assuming typedLength accurately reflects the number of typed characters
+      console.log(totalChars);
+      const wordsTyped = totalChars / 5; // Standard definition of a "word"
+      const wpm = wordsTyped / minutes; // Calculate words per minute
+
+      const timerDisplay = document.getElementById('js-timer');
+      if (timerDisplay) {
+        timerDisplay.textContent = `Final time: ${seconds.toFixed(2)} seconds, ${wpm.toFixed(2)} WPM`;
+      }
+    }
+  },
+  verifyAndHandleTimer() {
+    const charSpans = this.el.querySelectorAll(':scope > span:not(#remaining-text)');
+    // Check if there are no spans with the 'incorrect' class
+    // const noErrors = Array.from(charSpans).every(span => !span.classList.contains('incorrect'));
+    const allCorrect = Array.from(charSpans).every(span => span.classList.contains('correct'));
+    // Ensure the length matches the target phrase to consider completion
+    if (allCorrect && charSpans.length === this.phraseText.length) {
+      console.log("Input complete without errors.");
+      this.stopTimer();
+      // Additional logic for handling the completion of input without errors
+    } else {
+      // Handle cases where input is not complete or contains errors
+    }
+  }  
+
+
+
+};
 // const calculateHashButton = document.getElementById('calculateHashButton');
 //   if (calculateHashButton) {
 //     console.log("Calculate Hash Button found. Adding event listener.");
@@ -136,135 +511,21 @@ liveSocket.connect()
 
 // Initialize the JS managed area after the document is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-  const sel = window.getSelection();
-  const range = document.createRange();
+  
   let elapsedTime = 0; // Initialize elapsedTime to capture the durationr
   let startTime;
   let timerStarted = false;
   //const userInputField = document.getElementById('code-editor');
-  const phraseData =document.getElementById("phrase-data");
-  if (!phraseData ) return;
-  const phraseText = phraseData.dataset.phraseText;
+  
 //process the phrase into words because it wraps like 1 whole big word rn
 
-  let typedLength = 0; // Tracks how many characters have been correctly or incorrectly typed
 
-  const editableContainer = document.getElementById('editable-container');
-    const remainingTextSpan = document.getElementById('remaining-text');
-    let remainingTextContent = remainingTextSpan.textContent;
-
-    editableContainer.addEventListener('keydown', function(e) {
-      if (e.key === 'Backspace') {
-        e.preventDefault();
-        handleBackspace();
-      } else if (e.key === 'Enter') {
-        // Prevent default to manually handle newline
-        e.preventDefault();
-        handleEnter();
-      }
-    });
-
-    editableContainer.addEventListener('keypress', function(e) {
-      if (e.key !== 'Enter') { // Skip Enter key to avoid double handling
-        e.preventDefault(); // Prevent default character input
-        handleCharacterInput(e.key);
-        rightArrow();
-      }
-    });
     
-    function handleCharacterInput(char) {
-      
-      const correctChar = phraseText.charAt(typedLength);
-      // Check for special characters like tabs (\t) that need to be handled differently
-      const isCorrect = char === correctChar || (correctChar === '\n' && char === 'Enter') || (correctChar === '\t' && char === 'Tab');
-      const isEndOfLine = correctChar === '\n' || correctChar === ''; // Check if at the end of a line or text
-      if (isEndOfLine) {
-        //NO OP it just waits for enter
-        // Prevent adding the space directly
-        // appendExtraCharacter(); // Function to append the ▄ character
-        // if(char=== ' '){
-        //   appendChar('▄', true);
-        // }else{
-        //   appendChar(char,false);
-        // }
-      } else {
-        if (isCorrect) {
-          // Handle newline characters and tab characters for indentation
-          if (correctChar === '\n') {
-            appendNewLine();
-            // Automatically append indentation after new line if next characters are tabs or spaces
-            appendIndentation();
-          } else if (correctChar === '\t') {
-            appendTab();
-          } else {
-            appendChar(char, true);
-          }
-          typedLength++;
-          updateRemainingText();
-        } else {
-          if (correctChar === '\n') {
-            appendNewLine();
-            // Automatically append indentation after new line if next characters are tabs or spaces
-            appendIndentation();
-          } else if (correctChar === '\t') {
-            appendTab();
-          } else {
-            if(char === " ") char = "▄";
-            appendChar(char, false);
-          }
-          typedLength++;
-          moveCaretBeforeRemainingText();
-          updateRemainingText();
-          
-            
-          // Optionally handle incorrect input
-        }
-      }
-    }
+   
+     
     
-function getIndentationLevel(line) {
-  console.log(line);
-  // Matches leading spaces in the line
-  const result = line.match(/^(\s*)/);
-  
-  return result ? result[1].length : 0;
-}
-    function appendNewLine(isCorrect) {
-       const newLineSpan = document.createElement('br');
-      // newLineSpan.innerHTML = '&#x23ce;'; // Represents a return symbol, adjust as needed
-      // newLineSpan.className = isCorrect ? 'correct' : 'incorrect';
-      remainingTextSpan.parentNode.insertBefore(newLineSpan, remainingTextSpan);
-    }
-    function appendTab() {
-      const tabSpan = document.createElement('span');
-      tabSpan.textContent = '    '; // Visual representation of a tab, adjust as needed
-      tabSpan.className = 'correct'; // Assuming tab is correct for simplicity
-      remainingTextSpan.parentNode.insertBefore(tabSpan, remainingTextSpan);
-    }
-    function appendIndentation() {
-      let nextChars = phraseText.substring(typedLength);
-      let match = nextChars.match(/^(\s+)/); // Regex to capture leading spaces or tabs
-      
-      if (match) {
-        let indentation = match[1];
-        for (let i = 0; i < indentation.length; i++) {
-          let char = indentation[i];
-          if (char === '\t') {
-            appendTab();
-          } else {
-            appendChar(' ', true); // Assuming space is correct for simplicity
-          }
-          typedLength++;
-        }
-      }
-    }
     
-    function appendChar(char, isCorrect) {
-      const charSpan = document.createElement('span');
-      charSpan.textContent = char;
-      charSpan.className = isCorrect ? 'correct' : 'incorrect';
-      remainingTextSpan.parentNode.insertBefore(charSpan, remainingTextSpan);
-    }
+   
     // function updateRemainingText() {
     //   // Convert the remaining phrase text into a format suitable for HTML display
     //   let newText = phraseText.substring(typedLength)
@@ -277,58 +538,12 @@ function getIndentationLevel(line) {
     
     //   remainingTextSpan.innerHTML = newText; // Use innerHTML to interpret <br> tags and other HTML entities
     // }
-    function rightArrow() {
-      // I can just simulate a rightarrow
-
-      const event = new KeyboardEvent('keydown', {
-        key: "ArrowRight",
-        code: "ArrowRight",
-        keyCode: 39, // Deprecated but included for compatibility
-        which: 39, // Deprecated but included for compatibility
-        bubbles: true,
-        cancelable: true
-      });
-
-      document.dispatchEvent(event);
+    
     
 
 
 
-      
-    }
-    function moveCaretBeforeRemainingText(){
-// Position the range right before the remainingTextSpan
-      range.setStartBefore(remainingTextSpan);
-      range.collapse(true); // Collapse the range to its start point to ensure it doesn't span any content
-      
-      sel.removeAllRanges(); // Clear any existing selections
-      sel.addRange(range); // Add the new range, which positions the caret
-      
-      editableContainer.focus(); // Ensure the editable container is focused
-    }
-
-
-
-    function updateRemainingText() {
-      let html = '';
     
-      // Split the text into segments of words and whitespace/newlines
-      const segments = phraseText.substring(typedLength).split(/(\s+)/);
-    
-      // Process each segment, wrapping words in spans and preserving whitespace
-      segments.forEach(segment => {
-        if (segment.match(/\s+/)) {
-          // For segments that are purely whitespace, replace spaces with &nbsp; but leave newlines as <br>
-          html += segment.replace(/\n/g, '<br>');
-        } else {
-          // Wrap words in spans to keep them unbroken; no &nbsp; needed here
-          html += `<span>${segment}</span>`;
-        }
-      });
-    
-      // Set the processed HTML as the innerHTML of the remaining text span
-      remainingTextSpan.innerHTML = html;
-    }
     // function updateRemainingText() {
     //   let newText = phraseText.substring(typedLength)
     //     .replace(/\n/g, '<br>') // Convert newline characters to <br>
@@ -341,56 +556,6 @@ function getIndentationLevel(line) {
     //   let newText = phraseText.substring(typedLength).replace(/\n/g, '<br>'); // Convert newline characters to <br> for display
     //   remainingTextSpan.innerHTML = newText; // Use innerHTML to interpret <br> tags
     // }
-    function handleBackspace() {
-      if (typedLength > 0) {
-        typedLength--;
-        editableContainer.removeChild(editableContainer.childNodes[typedLength+1]);
-        // updateRemainingText();
-        // let removeIndex = typedLength; // Adjust if your indexing needs refinement
-        // let childNodes = Array.from(editableContainer.childNodes);
-        // let targetNode = childNodes.find((node, index) => index === removeIndex);
-        // if (targetNode) editableContainer.removeChild(targetNode);
-        updateRemainingText();
-      
-      }
-    }
-    function handleEnter() {
-      //const currentLine = getCurrentLine(editableContainer.textContent, typedLength);
-      const remainingLineText = phraseText.substring(typedLength).split('\n')[0];
-      const nextLineStartIndex = typedLength + remainingLineText.length + 1; // +1 for the newline character itself
-    
-      // Replace remaining text in the current line with a marker (if any)
-      if (remainingLineText.trim().length > 0) {
-        for (let _char of remainingLineText) {
-          appendChar('|', false); // Using • as a marker, marking it as incorrect for visual distinction
-          typedLength++;
-        }
-      }
-    
-      // Move to the next line
-      appendNewLine(true);
-      typedLength++; // Account for the newline character
-    
-      // Handle blank lines by not appending indentation until the next Enter press
-      const nextLineText = phraseText.substring(nextLineStartIndex).split('\n')[0];
-      if (nextLineText.trim().length === 0) {
-        // If the next line is blank, simply wait at the end/beginning of the line
-      } else {
-        // For non-blank lines, insert the correct indentation
-        const indentationLevel = getIndentationLevel(nextLineText);
-        console.log(indentationLevel);
-        for (let i = 0; i < indentationLevel; i++) {
-          appendChar( ' ', true);//nextLineText[i] === '\t' ? '\t' :
-          // appendChar( '&nbsp;', true);
-          // appendChar( '&nbsp;', true);
-          // appendChar( '&nbsp;', true);
-          typedLength++;
-          
-        }
-      }
-    
-      updateRemainingText();
-    }
     
 
   // const lines = phraseText.split('\n'); // For lines
@@ -663,50 +828,50 @@ function getIndentationLevel(line) {
   // }
 
 // Function to update the timer display smoothly
-function updateTimer() {
-  if (!timerStarted) {
-    return; // Stop the timer update loop if the timer is not supposed to be running
-  }
-  const now = new Date();
-  elapsedTime = now - startTime;
-  const seconds = (elapsedTime / 1000).toFixed(2); //1 Convert to seconds with two decimal places
+// function updateTimer() {
+//   if (!timerStarted) {
+//     return; // Stop the timer update loop if the timer is not supposed to be running
+//   }
+//   const now = new Date();
+//   elapsedTime = now - startTime;
+//   const seconds = (elapsedTime / 1000).toFixed(2); //1 Convert to seconds with two decimal places
 
-  const timerDisplay = document.getElementById('js-timer');
-  if (timerDisplay) {
-    timerDisplay.textContent = `JS Elapsed time: ${seconds} seconds`;
-  }
+//   const timerDisplay = document.getElementById('js-timer');
+//   if (timerDisplay) {
+//     timerDisplay.textContent = `JS Elapsed time: ${seconds} seconds`;
+//   }
 
-  requestAnimationFrame(updateTimer);
-}
+//   requestAnimationFrame(updateTimer);
+// }
 
-function startTimer() {
-  if (!timerStarted) {
-    startTime = new Date();
-    timerStarted = true;
-    updateTimer(); // Start the smooth timer update
-  }
-}
+// function startTimer() {
+//   if (!timerStarted) {
+//     startTime = new Date();
+//     timerStarted = true;
+//     updateTimer(); // Start the smooth timer update
+//   }
+// }
 
-function stopTimer() {
-  if (timerStarted) {
-    timerStarted = false;
-    const endTime = new Date();
-    elapsedTime = endTime - startTime; // Update elapsedTime to ensure it's current
-    const seconds = elapsedTime / 1000; // Convert to seconds
-    const minutes = seconds / 60; // Convert to minutes
+// function stopTimer() {
+//   if (timerStarted) {
+//     timerStarted = false;
+//     const endTime = new Date();
+//     elapsedTime = endTime - startTime; // Update elapsedTime to ensure it's current
+//     const seconds = elapsedTime / 1000; // Convert to seconds
+//     const minutes = seconds / 60; // Convert to minutes
     
 
-    const totalChars = userInputField.innerText.length;
-    console.log(totalChars);
-    const wordsTyped = totalChars / 5; // Standard definition of a "word"
-    const wpm = wordsTyped / minutes; // Calculate words per minute
+//     const totalChars = userInputField.innerText.length;
+//     console.log(totalChars);
+//     const wordsTyped = totalChars / 5; // Standard definition of a "word"
+//     const wpm = wordsTyped / minutes; // Calculate words per minute
 
-    const timerDisplay = document.getElementById('js-timer');
-    if (timerDisplay) {
-      timerDisplay.textContent = `Final time: ${seconds.toFixed(2)} seconds, ${wpm.toFixed(2)} WPM`;
-    }
-  }
-}
+//     const timerDisplay = document.getElementById('js-timer');
+//     if (timerDisplay) {
+//       timerDisplay.textContent = `Final time: ${seconds.toFixed(2)} seconds, ${wpm.toFixed(2)} WPM`;
+//     }
+//   }
+// }
 
 // const updateFunction = () => {
 //   const userInput =  userInputField.value; // Use textContent for accuracy
@@ -890,8 +1055,7 @@ window.addEventListener("toogle-darkmode", e => {
   else localStorage.theme = 'dark';
   initDarkMode();
 })
-moveCaretBeforeRemainingText();
-rightArrow();
+
 });
 
 window.liveSocket = liveSocket
