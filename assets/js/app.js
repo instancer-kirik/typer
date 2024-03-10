@@ -146,6 +146,7 @@ Hooks.EditableContainer = {
      this.elapsedTime = 0;
      this.startTime = null;
      this.userInput ="";
+     this.showElixir = this.el.dataset.showElixir === "true";
     const phraseData =document.getElementById("phrase-data");
     if (!phraseData ) return;
     this.phraseText = phraseData.dataset.phraseText;
@@ -393,6 +394,7 @@ Hooks.EditableContainer = {
           this.moveCaretBeforeRemainingText();
         },
         updateAndPushUserInput() {
+          if(this.showElixir){
           // Obtain the full text including both the user's input and the remaining text
           let fullText = this.el.innerText;
       
@@ -413,6 +415,7 @@ Hooks.EditableContainer = {
       
           // Now, send the trimmed userInput to the server
           this.pushEvent("input", { user_input: this.userInput });
+        }
       },
       
   startTimer() {

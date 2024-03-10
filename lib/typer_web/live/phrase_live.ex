@@ -173,14 +173,14 @@ def render(assigns) do
 
     <!-- Transparent contenteditable for user input -->
 
-      <div id="editable-container" name="user_input" phx-hook="EditableContainer" phx-debounce="1000" phx-update="ignore" contenteditable="true" style="position: relative; z-index: 2; background: transparent; white-space: pre-wrap;">
+      <div id="editable-container" name="user_input" phx-hook="EditableContainer" phx-debounce="1000" phx-update="ignore" contenteditable="true" data-show-elixir={@show_elixir |> to_string()} style="position: relative; z-index: 2; background: transparent; white-space: pre-wrap;">
      <span style = "display: inline;" id="remaining-text"><%= render_typing_area(@phrase, @user_input) %></span>
 
       </div>
     <br>
     <div id="completion-message" phx-update="ignore" class="completion-message"></div>
     <div class="toggle-container">
-      <button phx-click="toggle_show_elixir">Toggle Elixir Content</button>
+      <button phx-click="toggle_show_elixir">Toggle Elixir Version</button>
     </div>
     <%= if @show_elixir do %>
     <div class="elixir-content">
