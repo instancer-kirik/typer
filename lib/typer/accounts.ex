@@ -8,6 +8,28 @@ defmodule Typer.Accounts do
 
   alias Typer.Accounts.{User, UserToken, UserNotifier}
 
+
+
+
+  def toggle_show_elixir(%Typer.Accounts.User{preferences: preferences} = user) when is_map(preferences) do
+    new_preferences =
+      preferences
+      |> Map.update("show_elixir", not Map.get(preferences, "show_elixir", true), &not &1)
+
+    Typer.Accounts.update_user_preferences(user, new_preferences)
+  end
+
+  def toggle_show_elixir(%Typer.Accounts.User{} = user) do
+    new_preferences = %{"show_elixir" => false} # Default new preferences if none exist
+    Typer.Accounts.update_user_preferences(user, new_preferences)
+  end
+
+  def update_user_preferences(%Typer.Accounts.User{} = user, new_preferences) do
+    user
+    |> Typer.Accounts.User.changeset(%{preferences: new_preferences})
+    |> Typer.Repo.update()
+  end
+
   ## Database getters
 
   @doc """

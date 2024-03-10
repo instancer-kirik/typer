@@ -117,7 +117,27 @@ Hooks.HashCalculator = {
 //   }
 // };
 
+Hooks.Countdown = {
+  mounted() {
+    this.handleCountdown();
+  },
+  handleCountdown() {
+    let duration = 2; // Start at 2 because 3 is already displayed
+    let countdownElement = this.el;
+    let contentElement = document.getElementById("content");
 
+    let interval = setInterval(() => {
+      let currentNumber = parseInt(countdownElement.innerText, 10);
+      if (currentNumber > 1) {
+        countdownElement.innerText = currentNumber - 1;
+      } else {
+        clearInterval(interval);
+        countdownElement.style.display = "none"; // Hide the countdown
+        contentElement.style.display = "block"; // Show your content
+      }
+    }, 1000);
+  }
+};
 Hooks.EditableContainer = {
   
   mounted() {
@@ -158,7 +178,7 @@ Hooks.EditableContainer = {
       this.updateAndPushUserInput();
     });
 
-
+    this.el.focus();
   },//mounted
   
   handleCharacterInput(char) {
@@ -217,13 +237,10 @@ Hooks.EditableContainer = {
       
     }//isNotEndOfLine
     if (this.phraseText) {
-      console.log('Phrase:', this.phraseText);
-      console.log('User input:', this.userInput);
+      // console.log('Phrase:', this.phraseText);
+      // console.log('User input:', this.userInput);
 
-      if (this.userInput === this.phraseText) {
-        this.stopTimer();
-        // Optionally, invoke any other logic for when the user completes typing
-      } else if (!this.timerStarted&& this.elapsedTime==0) {
+       if (!this.timerStarted&& this.elapsedTime==0) {
         this.startTimer();
       }
     }
@@ -451,6 +468,7 @@ Hooks.EditableContainer = {
     if (allCorrect && charSpans.length === this.phraseText.length) {
       console.log("Input complete without errors.");
       this.stopTimer();
+      document.getElementById('completion-message').innerText="🎉 Congratulations! You've completed the typing task! 🎉"
       // Additional logic for handling the completion of input without errors
     } else {
       // Handle cases where input is not complete or contains errors

@@ -7,10 +7,16 @@ defmodule Typer.Accounts.User do
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
-
+    field :preferences, :map
     timestamps(type: :utc_datetime)
   end
-
+@doc false
+def changeset(user, attrs) do
+  user
+  |> cast(attrs, [:email, :preferences]) # Include :preferences in the list of fields that can be changed
+  |> validate_required([:email]) # Add other validations as necessary
+  # other changeset operations...
+end
   @doc """
   A user changeset for registration.
 

@@ -203,3 +203,8 @@ pre code {
   color: red;
 }
 
+#countdown {
+  font-size: 2em;
+  text-align: left;
+  padding: 20px;
+}

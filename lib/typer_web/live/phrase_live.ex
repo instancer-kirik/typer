@@ -27,6 +27,50 @@ defmodule TyperWeb.PhraseLive do
   #    )}
   # end
   def mount(%{"id" => id_param}, session, socket) do
+  #user_id = session["user_id"]
+# Assuming fetch_current_user_for_liveview returns `nil` if no user is found
+current_user = fetch_current_user_for_liveview(session)
+
+# Use a conditional check to ensure current_user is not nil before accessing preferences
+# show_elixir = if current_user != nil, do: Map.get(current_user.preferences, "show_elixir", true), else: true
+# Assuming `current_user.preferences` is a map; adjust this example as needed
+#show_elixir = get_in(current_user, [:preferences, "show_elixir"]) || true
+
+ # Initialize `show_elixir` to `true` by default
+
+
+  # Initialize show_elixir to true by default or use the value from current_user's preferences if available
+  show_elixir = case current_user do
+    %Typer.Accounts.User{preferences: %{"show_elixir" => preference_value}} when is_boolean(preference_value) ->
+      preference_value
+    _ ->
+      true # Default value if preferences or show_elixir key is not set
+  end
+  # Fetch the current user based on the user ID from the session
+  # You need to adjust the fetch_current_user function to accept the user ID as its argument
+  #current_user = fetch_current_user_for_liveview(session)
+
+   # show_elixir = Map.get(current_user.preferences, "show_elixir", true)s
+    updated_socket =
+      socket
+      |> assign(:current_user, current_user)
+      |> assign(:user_input, "")
+      |> assign(:error_positions, [])
+      |> assign(:start_time, nil)
+      |> assign(:end_time, nil)
+      |> assign(:completed, false)
+      |> assign(:comparison_results, [])
+      |> assign(:show_elixir, show_elixir)
+
+      # : "",
+      #
+      #  ,
+      #  end_time: nil,
+      #  completed: false,
+      #  comparison_results: [],
+      #  show_elixir: show_elixir)}
+
+
     case id_param do
       "0" ->
         # Handle the custom phrase case
@@ -34,14 +78,15 @@ defmodule TyperWeb.PhraseLive do
         custom_phrase = session["custom_phrase"] || "Default custom phrase"
         phrase = %Typer.Game.Phrase{text: custom_phrase, id: nil}
 
-        {:ok, assign(socket, phrase: phrase, user_input: "", error_positions: [], start_time: nil, end_time: nil, completed: false, comparison_results: [])}
+
+        {:ok, assign(updated_socket, :phrase, phrase)}
 
 
       id ->
         # Normal case for fetching a phrase by its database ID
         phrase = Game.get_phrase!(id)
-        {:ok, assign(socket, phrase: phrase, user_input: "", error_positions: [], start_time: nil, end_time: nil, completed: false, comparison_results: [])}
-
+        {:ok, assign(updated_socket, phrase: phrase)}
+# , user_input: "", error_positions: [], start_time: nil, end_time: nil, completed: false, comparison_results: [], show_elixir: show_elixir)}
     end
   end
   # def mount(%{"id" => id}, _session, socket) do
@@ -58,6 +103,7 @@ defmodule TyperWeb.PhraseLive do
 def render(assigns) do
   IO.inspect(assigns[:user_input], label: "Rendering with user_input")
   elapsed = elapsed_time(assigns.start_time, assigns.end_time)
+
   assigns = assign(assigns, :elapsed, elapsed)
   #is_completed = assigns.user_input == assigns.phrase.text
   # textarea.typing-area {
@@ -117,11 +163,12 @@ def render(assigns) do
   ~H"""
 
   <div class="layout-container" >
+
   <div id="phrase-data" data-phrase-text={@phrase.text}></div>
     <div  phx-update="ignore" id="timer-box">
       <div id="js-timer">READY</div>
       </div>
-
+      <div id="countdown" phx-update="ignore" phx-hook="Countdown">3..</div>
     <!-- Dynamically update this content based on input -->
 
     <!-- Transparent contenteditable for user input -->
@@ -131,11 +178,24 @@ def render(assigns) do
 
       </div>
     <br>
+    <div id="completion-message" phx-update="ignore" class="completion-message"></div>
+    <div class="toggle-container">
+      <button phx-click="toggle_show_elixir">Toggle Elixir Content</button>
+    </div>
+    <%= if @show_elixir do %>
     <div class="elixir-content">
+
+    <%= if @completed do %>
+
+    <div>Final time: <%= @elapsed %> seconds</div>
+    <% else %>
+      Elapsed time: <%= @elapsed %> seconds
+    <% end %>
       <div id="elixir-content">
           <pre ><code class="elixir-content" ><%= render_typing_area(@phrase, @user_input) %></code></pre>
       </div>
     </div>
+    <% end %>
   </div>
   """
 
@@ -200,6 +260,15 @@ def render(assigns) do
     end)
     |> Enum.join()
   end
+
+  def fetch_current_user_for_liveview(session) do
+    user_token = Map.get(session, "user_token")
+    user = user_token && Typer.Accounts.get_user_by_session_token(user_token)
+
+    # Ensure a default user structure if not found; adjust according to your application needs
+    user || %{}
+  end
+
   # defp render_typing_area(phrase, user_input) do
   #   comparison_results = compare_input(user_input, phrase)
 
@@ -304,11 +373,38 @@ def render(assigns) do
 
   @impl true
   def handle_event("input", %{"user_input" => input}, socket) do
+    # Start the timer only if it hasn't been started yet (first input)
+    start_time = socket.assigns.start_time || DateTime.utc_now()
+    # Update socket with the new input, maintaining start time and recalculating end time if needed
+    updated_socket =
+      socket
+      |> assign(:user_input, input)
+      |> assign(:start_time, start_time)
+      |> maybe_complete(input)
 
-    {:noreply, assign(socket, user_input: input)}
+    {:noreply, updated_socket}
+    #{:noreply, assign(socket, user_input: input)}
   end
 
+  def handle_event("toggle_show_elixir", _params, socket) do
+    current_user = socket.assigns.current_user
+    case Typer.Accounts.toggle_show_elixir(current_user) do
+      {:ok, updated_user} ->
+        # Update socket's assigns as needed, e.g., with the updated user
+        updated_socket =
+          socket
+          |> assign(:current_user, updated_user)
+          |> assign(:show_elixir, not socket.assigns.show_elixir)
+        {:noreply, updated_socket}
 
+      {:error, _reason} ->
+        updated_socket =
+          socket
+          |> assign(:show_elixir, not socket.assigns.show_elixir)
+        # Handle error, e.g., log it or send a message to the user
+        {:noreply, updated_socket}
+    end
+  end
   # def handle_event("keydown", %{"key" => "Enter", "target" => target}, socket) do
   #   # Calculate new cursor position to move to the start of the next line.
   #   # This is conceptual; your actual implementation may vary.
@@ -329,7 +425,16 @@ def handle_event(event, params, socket) do
 end
 
 
-
+defp maybe_complete(socket, input) do
+  # If the input matches the phrase and end_time is not set, mark as completed and set end_time
+  if input == socket.assigns.phrase.text && is_nil(socket.assigns.end_time) do
+      socket
+      |> assign(:end_time, DateTime.utc_now())
+      |> assign(:completed, true)
+     else
+    socket
+  end
+end
 
   defp elapsed_time(start_time, end_time) do
     case {start_time, end_time} do
