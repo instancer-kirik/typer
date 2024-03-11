@@ -19,13 +19,17 @@ defmodule TyperWeb.Router do
   end
 
   scope "/", TyperWeb do
+
     pipe_through :browser
+    # Public routes
+    get "/", PageController, :home
     live "/phrases/:id", PhraseLive, :show, as: :phrase
 
     post "/set_custom_phrase", SessionController, :set_custom_phrase
     get "/toggle_dark_mode", SessionController, :toggle_dark_mode
     post "/add-hash", SessionController, :add_hash
-
+    get "/update-cookies", SessionController, :update_cookies
+    get "/toggle_show_elixir", SessionController, :toggle_elixir
   end
 
   # Other scopes may use custom stacks.
@@ -54,7 +58,7 @@ defmodule TyperWeb.Router do
 
   scope "/", TyperWeb do
     pipe_through [:browser, :redirect_if_user_is_authenticated]
-    get "/", PageController, :home
+
     live_session :redirect_if_user_is_authenticated,
       on_mount: [{TyperWeb.UserAuth, :redirect_if_user_is_authenticated}] do
       live "/users/register", UserRegistrationLive, :new
@@ -71,8 +75,7 @@ defmodule TyperWeb.Router do
 
     live_session :require_authenticated_user,
       on_mount: [{TyperWeb.UserAuth, :ensure_authenticated}] do
-      live "/home", HomeLive, :index
-      live "/hash_slinging_hasher", HashSlingingHasherLive, :index
+
       live "/users/settings", UserSettingsLive, :edit
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
     end
@@ -82,7 +85,8 @@ defmodule TyperWeb.Router do
     pipe_through [:browser]
 
     delete "/users/log_out", UserSessionController, :delete
-
+    live "/home", HomeLive, :index
+    live "/hash_slinging_hasher", HashSlingingHasherLive, :index
     live_session :current_user,
       on_mount: [{TyperWeb.UserAuth, :mount_current_user}] do
       live "/users/confirm/:token", UserConfirmationLive, :edit

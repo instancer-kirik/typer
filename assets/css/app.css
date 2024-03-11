@@ -4,7 +4,40 @@
 @import "tailwindcss/utilities";
 
 /* This file is for your main application CSS */
-*{background-color: rgb(83, 52, 52);}
+:root {
+  --main-bg-color: rgb(83, 52, 52);
+  background-color: rgb(32, 32, 2)!important; 
+}
+.mytheme2{
+  background-color: rgb(15, 15, 8); 
+  color: #6e6e6e;
+}
+/* Alternative theme */
+.mytheme {
+  background-color:#58111A  ;
+  color: #6e6e6e;
+  /* Additional styling for mytheme2 #4b1e1e;*/
+}
+.form-container {
+  background-color: #c4c1c1; /* Softer than pure white, for example */
+  border-radius: 8px; /* Adds rounded corners */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow for depth */
+  padding: 20px; /* Adds some internal spacing */
+  max-width: 400px; /* Adjusts the width as needed */
+  margin: 20px auto; /* Centers the form on the page */
+}
+/* .body-dark-mode {
+  --main-bg-color: rgb(83, 52, 52);
+  background-color: rgb(32, 32, 2); 
+  color: #b43939;
+ */
+
+body, html {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: rgb(--main-bg-color);
+}
 .error {
     text-decoration: red wavy;
     color: red;
@@ -47,7 +80,7 @@
 .buttonly {
   background-color: #1ab91f; /* Green background */
   border: none; /* Remove borders */
-  color: white; /* White text */
+  color: dimgray; /* White text */
   padding: 7px 16px; /* Padding */
   text-align: center; /* Centered text */
   text-decoration: none; /* No underline */
@@ -80,16 +113,16 @@ main {
 /* Ensuring all nested elements within the dark-mode container adopt the intended styles */
 .dark-mode, .dark-mode button, .dark-mode .buttonly, .dark-mode .dark-mode-toggle {
   background-color: #333;
-  color: #fff;
+  color: #6e6e6e;
 }
 
 .dark-mode .dark-mode-toggle {
-  background-color: #f0f0f0;
+  background-color: #a7a7a7;
   color: #333;
 }
 
 .dark-mode .dark-mode-toggle:hover {
-  background-color: #e0e0e0;
+  background-color: #2e2a2a;
 }
 
 /* Dark mode styles */
@@ -100,7 +133,7 @@ main {
   padding: 0;
   transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition for dark mode */
 
-  background-color: #121212;
+  background-color: #aaaaaa;
   color: #b43939;
   
 }
@@ -179,6 +212,7 @@ pre code {
 .layout-container {
   position: relative;
   width: 100%; /* or specific width as needed */
+ 
 }
 
 
@@ -202,9 +236,190 @@ pre code {
 .mismatch {
   color: red;
 }
+.incomplete {
+  color: silver;
+}
+#remaining-text{
+  color: silver;
+}
 
 #countdown {
   font-size: 2em;
   text-align: left;
   padding: 20px;
+}
+.cookie-popup {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background-color: rgb(39, 21, 21);
+  color: silver;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.layout-container{
+  color:silver
+}
+
+/* Styling for the form */
+form {
+  margin-top: 20px;
+}
+
+textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid #bdc3c7;
+  background-color: #333;
+}
+
+/* Styling for phrases list */
+#opts {
+  margin-top: 20px;
+}
+
+#opts div {
+  background: #836b4d;
+  margin-bottom: 10px;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+#opts p {
+  margin: 0;
+  color: #ecf0f1;
+}
+
+#opts a {
+  color: #1abc9c;
+  text-decoration: none;
+}
+
+#opts button {
+  margin-top: 10px;
+}
+/* Styling for the modal background */
+.modal-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+#new-phrase-modal {
+  background-color: #047726; /* Light grey background */
+  padding: 20px; /* Padding around the modal content */
+  border-radius: 8px; /* Rounded corners */
+  width: 90%; /* Modal width */
+  max-width: 500px; /* Maximum modal width */
+  margin: auto; /* Center the modal */
+}
+
+/* Style the textarea inside the modal */
+#new-phrase-modal textarea {
+  width: 100%; /* Full width */
+  height: 150px; /* Set height */
+  margin-top: 10px; /* Space above the textarea */
+  border: 1px solid #6d5a05; /* Border color */
+  padding: 8px; /* Padding inside the textarea */
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+/* Style the button inside the modal */
+#new-phrase-modal button {
+  background-color: #883200; /* Button background color */
+  color: white; /* Button text color */
+  padding: 10px 20px; /* Padding inside the button */
+  border: none; /* No border */
+  border-radius: 5px; /* Rounded corners */
+  cursor: pointer; /* Cursor changes to pointer when hovering over the button */
+  margin-top: 10px; /* Space above the button */
+}
+
+/* Style the button on hover */
+#new-phrase-modal button:hover {
+  background-color: #926744; /* Darker blue when hovered */
+}
+/* Reset the opacity and set the color for p, a, and label elements */
+p, a, label {
+  opacity: 1; /* Make sure text is fully opaque */
+  color: #333; /* Dark grey color for better readability */
+  /* You can adjust the color value to fit your design */
+}
+
+/* Ensure links (a tags) have a distinguishable color */
+a {
+  color: #1b5310; /* Bright blue, commonly used for links */
+  text-decoration: underline; /* Underline to indicate clickability */
+}
+
+/* Specifically target the label for enhanced visibility */
+label {
+  color: #000; /* Black color for labels */
+  font-weight: bold; /* Make label text bold */
+}
+
+/* If labels are dynamically generated and might have different IDs, target by attribute */
+label[data-phx-id] {
+  color: #000; /* Ensuring labels with data-phx-id are also clearly visible */
+  font-weight: bold;
+}
+/* Targeting text within the phrases container specifically */
+/* Ensuring specificity with #opts ID and targeting direct child divs */
+#opts > div > p,
+#opts > div > a,
+#opts > div > button {
+    color: #000; /* Adjust as necessary for your design */
+    opacity: 1; /* Ensure text is fully opaque */
+}
+
+#opts > div > a {
+    text-decoration: underline; /* Emphasize links */
+}
+
+#opts > div > button {
+    background-color: #6e6e6e; /* Light grey background */
+    border: 1px solid #d4d4d4; /* Slightly darker border for definition */
+    padding: 5px 10px; /* Padding for a better button appearance */
+    cursor: pointer; /* Visual cue for clickable buttons */
+}
+
+#opts > div > button:hover {
+    background-color: #d4d4d4; /* Darker on hover for visual feedback */
+}
+.input-container {
+  margin-bottom: 15px;
+}
+
+.input-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 16px;
+  color: #333;
+}
+
+.text-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box; /* Makes sure padding does not add to the width */
+  font-size: 14px;
+  color: #333;
+}
+
+.text-input:focus {
+  border-color: #0066ff;
+  outline: none; /* Removes the default focus outline */
+  box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.2); /* Adds a soft blue glow */
 }

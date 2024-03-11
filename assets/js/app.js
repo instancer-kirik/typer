@@ -23,6 +23,62 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 //import "htmx.org";
 let Hooks = {};
+
+
+Hooks.DarkModeToggle = {
+  mounted() {
+    this.applyInitialTheme();
+
+    this.el.addEventListener("click", () => {
+      // Toggle between mytheme and mytheme2 based on the current class
+      const newTheme = document.body.classList.contains("mytheme") ? "mytheme2" : "mytheme";
+      document.body.classList.toggle("mytheme");
+      document.body.classList.toggle("mytheme2");
+
+      // Update the data attribute to reflect the new state
+      this.el.dataset.darkMode = newTheme === "mytheme2" ? "true" : "false";
+
+      // Update the cookie to reflect the current theme
+      this.setCookie("dark_mode", newTheme === "mytheme2" ? "true" : "false", 365);
+
+      // Optionally, push the event to LiveView to update the server-side state
+      this.pushEvent("toggle_dark_mode", { dark_mode: newTheme === "mytheme2" });
+    });
+  },
+
+  applyInitialTheme() {
+    const currentTheme = this.getCookie("dark_mode");
+    // Apply the theme based on the cookie value
+    if (currentTheme === "true") {
+      document.body.classList.add("mytheme2");
+      document.body.classList.remove("mytheme");
+    } else {
+      document.body.classList.add("mytheme");
+      document.body.classList.remove("mytheme2");
+    }
+  },
+
+  setCookie(name, value, days) {
+    let expires = "";
+    if (days) {
+      let date = new Date();
+      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+      expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+  },
+
+  getCookie(name) {
+    let nameEQ = name + "=";
+    let ca = document.cookie.split(';');
+    for(let i=0;i < ca.length;i++) {
+        let c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1,c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    }
+    return null;
+  }
+};
 Hooks.AutoFocus = {
   mounted() {
     this.el.focus();
@@ -34,13 +90,19 @@ Hooks.AutoFocus = {
     this.el.focus();
   }
 };
-// editableContainer.addEventListener('keypress', function(e) {
-//   if (e.key !== 'Enter') { // Skip Enter key to avoid double handling
-//     e.preventDefault(); // Prevent default character input
-//     handleCharacterInput(e.key);
-//   }
-// });
-
+Hooks.ForceReload = {
+  mounted() {
+    //console.log("ForceReload hook mounted.");
+    this.handleEvent("update_client", () => {
+      //console.log(payload.message); // Server says hello
+      window.location.reload();
+    });
+    this.handleEvent("alert", (payload) => {
+      console.log(payload.message); // Server says hello
+      // window.location.reload();
+    });
+  }
+};
 Hooks.HashCalculator = {
   mounted() {
     console.log("HashCalculator mounted. Initializing hash calculation script.");
@@ -76,46 +138,6 @@ Hooks.HashCalculator = {
   }
 };
 
-// Hooks.EditableContainer = {//enter doesn't form the push_event arg right, no \n and indent
-//   mounted() {
-//     let userInput = ''; // Initialize an empty string to keep track of user input
-    
-//     this.el.addEventListener('keydown', (e) => {
-//       // Handle backspace by removing the last character from `userInput`
-//       if (e.key === 'Backspace' && userInput.length > 0) {
-//         e.preventDefault(); // Prevent the default backspace behavior
-//         userInput = userInput.slice(0, -1); // Remove the last character
-//         this.pushEvent("input", { user_input: userInput }); // Send the updated user input
-//       }
-//     });
-// //in order for this approach to work, I need to calculate the indentations and send them correctly each 
-//     this.el.addEventListener('keypress', (e) => {
-//       // Ignore Enter key here to avoid duplication
-//       if (e.key === 'Enter') {
-//         // Handle new line input separately if needed
-
-
-//         userInput += '\n'; // Append a newline character to `userInput`
-//       } else {
-//         e.preventDefault(); // Prevent the default character input
-//         userInput += e.key; // Append the pressed key to `userInput`
-//       }
-      
-//       this.pushEvent("input", { user_input: userInput }); // Send the updated user input
-//     });
-
-//     // Optional: Implement a function to handle special characters like tabs ('\t') as needed
-//   }
-// };
-// Hooks.EditableContainer = {//if i can just send the typed text and not the whole phrase every time, efficiency stuff
-//   mounted() {
-    
-//     this.el.addEventListener('keypress', (e) => {
-      
-//       this.pushEvent("input", { user_input: this.el.innerText });
-//     });
-//   }
-// };
 
 Hooks.Countdown = {
   mounted() {
@@ -124,7 +146,7 @@ Hooks.Countdown = {
   handleCountdown() {
     let duration = 2; // Start at 2 because 3 is already displayed
     let countdownElement = this.el;
-    let contentElement = document.getElementById("content");
+    //let contentElement = document.getElementById("content");
 
     let interval = setInterval(() => {
       let currentNumber = parseInt(countdownElement.innerText, 10);
@@ -133,7 +155,9 @@ Hooks.Countdown = {
       } else {
         clearInterval(interval);
         countdownElement.style.display = "none"; // Hide the countdown
-        contentElement.style.display = "block"; // Show your content
+        countdownElement.innerText ="";
+        countdownElement.style.show="false";
+        //contentElement.style.display = "block"; // Show your content
       }
     }, 1000);
   }
@@ -182,6 +206,9 @@ Hooks.EditableContainer = {
     this.el.focus();
   },//mounted
   
+  updated() {
+    this.el.focus();
+  },
   handleCharacterInput(char) {
     
     const correctChar = this.phraseText.charAt(this.typedLength);
@@ -481,38 +508,7 @@ Hooks.EditableContainer = {
 
 
 };
-// const calculateHashButton = document.getElementById('calculateHashButton');
-//   if (calculateHashButton) {
-//     console.log("Calculate Hash Button found. Adding event listener.");
-//     calculateHashButton.addEventListener('click', function() {
-//       const fileInput = document.getElementById('fileInput');
-//       const files = fileInput.files;
-//       if (files.length === 0) {
-//         console.log("No file selected.");
-//         alert("Please select a file.");
-//         return;
-//       }
-//       console.log(`File selected: ${files[0].name}`);
 
-//       const file = files[0];
-//       file.arrayBuffer().then(arrayBuffer => {
-//         console.log("File loaded into array buffer. Calculating hash.");
-//         return crypto.subtle.digest('SHA-256', arrayBuffer);
-//       }).then(hashBuffer => {
-//         console.log("Hash calculated. Converting to hex string.");
-//         const hashArray = Array.from(new Uint8Array(hashBuffer));
-//         const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-//         console.log(`Hash calculated: ${hashHex}`);
-        
-//         // Ensure `liveSocket` is correctly initialized and accessible here
-//         liveSocket.pushEventTo("#content", "hash_calculated", {hash: hashHex, fileName: file.name});
-//       }).catch(error => {
-//         console.error("Error calculating hash: ", error);
-//       });
-//     });
-//   } else {
-//     console.log("Calculate Hash Button not found.");
-//   }
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {params: {_csrf_token: csrfToken}, hooks: Hooks})
@@ -533,533 +529,9 @@ liveSocket.connect()
 // Initialize the JS managed area after the document is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
   
-  let elapsedTime = 0; // Initialize elapsedTime to capture the durationr
-  let startTime;
-  let timerStarted = false;
-  //const userInputField = document.getElementById('code-editor');
+
+//-------------------------------------------------------------------------------------------------------------------------------
   
-//process the phrase into words because it wraps like 1 whole big word rn
-
-
-    
-   
-     
-    
-    
-   
-    // function updateRemainingText() {
-    //   // Convert the remaining phrase text into a format suitable for HTML display
-    //   let newText = phraseText.substring(typedLength)
-    //     .replace(/\n/g, '<br>') // Convert newline characters to <br> for display
-    //     .replace(/\t/g, '    '); // Optionally convert tabs to spaces for visual consistency
-    
-    //   // Handle markers for skipped text (if using special characters like •)
-    //   // Ensure that these markers are also properly displayed
-    //   newText = newText.replace(/•/g, '<span class="marker">•</span>');
-    
-    //   remainingTextSpan.innerHTML = newText; // Use innerHTML to interpret <br> tags and other HTML entities
-    // }
-    
-    
-
-
-
-    
-    // function updateRemainingText() {
-    //   let newText = phraseText.substring(typedLength)
-    //     .replace(/\n/g, '<br>') // Convert newline characters to <br>
-    //     .replace(/ /g, '&nbsp;') // Convert spaces to non-breaking spaces
-    //     // .replace(/\t/g, '<span class="tab">    </span>'); // Optionally represent tabs with a styled span
-    
-    //   remainingTextSpan.innerHTML = newText;
-    // }
-    // function updateRemainingText() {
-    //   let newText = phraseText.substring(typedLength).replace(/\n/g, '<br>'); // Convert newline characters to <br> for display
-    //   remainingTextSpan.innerHTML = newText; // Use innerHTML to interpret <br> tags
-    // }
-    
-
-  // const lines = phraseText.split('\n'); // For lines
-  // //if (!userInputField ) return;
-
-  // const container = document.getElementById('editable-container');
-    
-  //   let userInput = "";
-
-  //   // Initialize display with the phrase as ghost text
-  //   initializeDisplay(phraseText);
-
-  //   container.addEventListener('input', function(e) {
-  //       // Update userInput based on the current text content and cursor position
-  //       const cursorPosition = getCaretCharacterOffsetWithin(container);
-  //       userInput = container.innerText.substring(0, cursorPosition);
-  //       updateDisplay(phraseData, userInput);
-
-  //       // Restore the cursor position after display update
-  //       setCaretPosition(container, cursorPosition);
-  //   });
-
-  //   function initializeDisplay(phrase) {
-  //       container.innerHTML = phrase.split('').map(char => `<span class="ghost">${char}</span>`).join('');
-  //   }
-
-  //   function updateDisplay(phrase, input) {
-  //       let displayHTML = "";
-  //       for (let i = 0; i < phrase.length; i++) {
-  //           const char = phrase[i];
-  //           const inputChar = input[i];
-  //           let charClass = inputChar === char ? 'match' : 'ghost';
-  //           if (inputChar && inputChar !== char) charClass = 'mismatch';
-  //           displayHTML += `<span class="${charClass}">${char}</span>`;
-  //       }
-  //       container.innerHTML = displayHTML;
-  //   }
-
-  //   function getCaretCharacterOffsetWithin(element) {
-  //       let caretOffset = 0;
-  //       const doc = element.ownerDocument || element.document;
-  //       const win = doc.defaultView || doc.parentWindow;
-  //       let sel;
-  //       if (typeof win.getSelection != "undefined") {
-  //           sel = win.getSelection();
-  //           if (sel.rangeCount > 0) {
-  //               const range = win.getSelection().getRangeAt(0);
-  //               const preCaretRange = range.cloneRange();
-  //               preCaretRange.selectNodeContents(element);
-  //               preCaretRange.setEnd(range.endContainer, range.endOffset);
-  //               caretOffset = preCaretRange.toString().length;
-  //           }
-  //       }
-  //       return caretOffset;
-  //   }
-
-  //   function setCaretPosition(element, position) {
-  //       let count = 0;
-  //       const setPos = (node) => {
-  //           if (node.nodeType === 3) { // Text node
-  //               if (count + node.length >= position) {
-  //                   const range = document.createRange();
-  //                   const sel = window.getSelection();
-  //                   range.setStart(node, position - count);
-  //                   range.collapse(true);
-  //                   sel.removeAllRanges();
-  //                   sel.addRange(range);
-  //                   return true; // Stop the loop
-  //               }
-  //               count += node.length;
-  //           } else if (node.nodeType === 1) { // Element node
-  //               for (let child of node.childNodes) {
-  //                   if (setPos(child)) return true; // Found position, stop loop
-  //               }
-  //           }
-  //       };
-  //       for (let child of element.childNodes) {
-  //           if (setPos(child)) break; // Found position, stop loop
-  //       }
-  //   }
-
-
-  // ///////Maybe make it recognize "eld ) return;" with "eld) return;"
-  // function updateJSTypingArea(phrase, userInput) {
-  //   const codeElement = document.querySelector('#js-typing-area');
-  //   if (!codeElement) return;
-    
-  //   const phraseLines = phrase.split('\n');
-  //   const userInputLines = userInput.split('\n');
-  //   let htmlContent = '';
-  
-  //   phraseLines.forEach((phraseLine, lineIndex) => {
-  //     const userInputLine = userInputLines[lineIndex] || '';
-  //     let lineHtmlContent = '';
-  //     let wordHtmlContent = '';
-  //     let extraSpacesHandled = false;
-  //     let isLineBlank = true; // Assume the line is blank until proven otherwise
-  //     let isLineStart = true; // Flag to track the start of a linea
-  //     for (let i = 0; i < phraseLine.length; i++) {
-  //       const phraseChar = phraseLine[i];
-  //       const userInputChar = userInputLine[i] || ' ';
-  //       let classList = ['ghost-text'];
-  //       let displayChar = phraseChar === ' ' ? '&nbsp;' : phraseChar;
-  
-  //       if (userInputChar !== undefined) {
-          
-  //         if (phraseChar === userInputChar || (phraseChar === ' ' && userInputChar === ' ')) {
-  //           classList = ['correct-input'];
-  //           isLineBlank = false; // There's content in this line
-  //         } else if (userInputChar !== ' ') {
-  //           classList = ['error'];
-  //           isLineBlank = false; // There's content in this line
-  //           displayChar = userInputChar === ' ' ? '▄' : userInputChar; // Use ▄ for error spaces
-  //         }
-  //       }
-  //        // Handle the zero-width space for the first character in a line or after a newline
-      
-  // // Append the character to the word HTML, handling spaces as their own "word"
-  //       if (phraseChar === ' ') {
-  //         if (isLineStart) {
-  //           displayChar = '&#8203;'; // Use zero-width space if the actual space is the first character
-  //           isLineStart = false; // Reset flag after handling the first character'
-  //         } else{
-  //           isLineStart = false; // Any non-space character means we're no longer at the start
-  //         }
-  //         // Close the previous word and start a new span for the space
-  //         lineHtmlContent += `<span class="word">${wordHtmlContent}</span>`;
-  //         wordHtmlContent = ''; // Reset word HTML content
-  //         // Add the space as its own word span
-  //         lineHtmlContent += `<span class="word"><span class="${classList.join(' ')}">${displayChar}</span></span>`;
-  //     } else {
-  //         wordHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;
-  //     }
-
-  //     // Ensure the last word is added if it's not followed by a space
-  //     if (i === phraseLine.length - 1 && wordHtmlContent !== ' ') {
-  //         lineHtmlContent += `<span class="word">${wordHtmlContent}</span>`;
-  //         wordHtmlContent = '';
-  //     }
-  //     // if (phraseChar === ' ' || i === phraseLine.length - 1) {
-  //     //   lineHtmlContent += `<span class="word">${wordHtmlContent}</span>`;
-        
-  //     // }
-  //   }
-  //     //   wordHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;//changed from space to blank
-  
-        
-  //     // }
-  
-  //     // Handle trailing spaces in user input as correct, if they exist beyond the phrase length
-  //     if (userInputLine.length > phraseLine.length) {
-  //       const extraChars = userInputLine.slice(phraseLine.length);
-  //       if (/^\s*$/.test(extraChars)) { // Check if all extra characters are spaces
-  //         extraChars.split('').forEach(() => {
-  //           lineHtmlContent += `<span class="correct">&nbsp;</span>`;
-  //         });
-  //         extraSpacesHandled = true;
-  //       }
-  //     }
-  
-  //     // If there were no extra spaces or other characters that were handled as correct,
-  //     // handle any remaining extra characters as errors.
-  //     if (!extraSpacesHandled && userInputLine.length > phraseLine.length) {
-  //       const extraChars = userInputLine.slice(phraseLine.length);
-  //       extraChars.split('').forEach(char => {
-  //         const displayChar = char === ' ' ? '&nbsp;' : char;
-  //         lineHtmlContent += `<span class="error">${displayChar}</span>`;
-  //       });
-  //     }
-  //     if (isLineBlank) {
-  //       // If the line is still considered blank, insert a zero-width space&#8203;
-  //       lineHtmlContent += `<div class="line">&nbsp;</div>`;
-  //     }
-  //     htmlContent += `<div class="line">${lineHtmlContent}</div>`;
-  //   });
-  
-  //   codeElement.innerHTML = htmlContent;
-  // }
-
-  // function updateJSTypingArea(phrase, userInput) {
-  //   const codeElement = document.querySelector('#js-typing-area');
-  //   if (!codeElement) return;
-
-  //   const phraseLines = phrase.split('\n'); // Split phrase into lines
-  //   const userInputLines = userInput.split('\n'); // Split user input into lines
-  //   let htmlContent = '';ss
-    
-  //   // Process each line
-  //   phraseLines.forEach((line, lineIndex) => {
-  //     const phraseChars = Array.from(line || ''); // Convert current line to characters
-  //     const userInputChars = Array.from(userInputLines[lineIndex] || ''); // Safely handle undefined lines
-  //     let lineHtmlContent = '';
-  //     // Special handling for expected blank lines
-  //   if (phraseChars.length === 0) {
-  //     // For blank lines, if the user has typed something, it should be marked as incorrect
-  //     if (userInputLines[lineIndex] && userInputLines[lineIndex].length > 0) {
-  //       userInputChars.forEach(char => {
-  //         const displayChar = char === ' ' ? '&nbsp;' : char; // Handle spaces
-  //         lineHtmlContent += `<span class="error">${displayChar}</span>`; // Mark user input as incorrect
-  //       });
-  //     } else {
-  //       // If there's no user input, render a zero-width space to keep the line's visual presence
-  //       lineHtmlContent += `&#8203;`; // Use a zero-width space
-  //     }
-  //     htmlContent += `<div class="blank-line">${lineHtmlContent}</div>`;
-  //     return; // Proceed to the next line
-  //   }
-  //     phraseChars.forEach((char, charIndex) => {
-  //       let classList = ['ghost-text']; // Default class for untyped text
-  //       let displayChar = char === ' ' ? '&nbsp;' : char; // Handle spaces
-  // // Check if the current character index is within the length of the user's input for this line
-     
-  //       if (charIndex < userInputChars.length) {
-  //         const userChar = userInputChars[charIndex];
-  //         if (userChar === char) {
-  //           classList = ['correct']; // Correct input
-  //         } else {
-  //           classList = ['error']; // Incorrect input
-  //         }
-  //       }
-
-  //       // Append character span to lineHtmlContent
-  //       lineHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;
-  //     });
-
-  //     // Wrap each line of content in a div for proper line breaks
-  //     htmlContent += `<div>${lineHtmlContent}</div>`;
-  //   });
-
-  //   codeElement.innerHTML = htmlContent; // Update the code element with the new HTML content
-  // }
-
-
-  // function updateJSTypingArea(phrase, userInput) {
-  //   const codeElement = document.querySelector('#js-typing-area');
-  //   if (!codeElement) return;
-  
-  //   const phraseLines = phrase.split('\n'); // Split phrase into lines
-  //   const userInputLines = userInput.split('\n'); // Split user input into lines
-  //   let htmlContent = '';
-  
-  //   // Process each line
-  //   phraseLines.forEach((line, lineIndex) => {
-  //     const phraseChars = Array.from(line || ''); // Convert current line to characters
-  //     const userInputChars = Array.from(userInputLines[lineIndex] || ''); // Safely handle undefined lines
-  //     let lineHtmlContent = '';
-  
-  //     phraseChars.forEach((char, charIndex) => {
-  //       let classList = ['ghost-text']; // Default class for untyped text
-  //       let displayChar = char === ' ' ? '&nbsp;' : char; // Handle spaces
-  
-  //       if (charIndex < userInputChars.length) {
-  //         const userChar = userInputChars[charIndex];
-  //         if (userChar === char) {
-  //           classList = ['correct-input']; // Correct input
-  //         } else {
-  //           classList = ['error']; // Incorrect input
-  //         }
-  //       }
-  
-  //       // Append character span to lineHtmlContent
-  //       lineHtmlContent += `<span class="${classList.join(' ')}">${displayChar}</span>`;
-  //     });
-  
-  //     // Wrap each line of content in a div or span for proper line breaks
-  //     htmlContent += `<div>${lineHtmlContent}</div>`;
-  //   });
-  
-  //   codeElement.innerHTML = htmlContent; // Update the code element with the new HTML content
-  // }
-
-// Function to update the timer display smoothly
-// function updateTimer() {
-//   if (!timerStarted) {
-//     return; // Stop the timer update loop if the timer is not supposed to be running
-//   }
-//   const now = new Date();
-//   elapsedTime = now - startTime;
-//   const seconds = (elapsedTime / 1000).toFixed(2); //1 Convert to seconds with two decimal places
-
-//   const timerDisplay = document.getElementById('js-timer');
-//   if (timerDisplay) {
-//     timerDisplay.textContent = `JS Elapsed time: ${seconds} seconds`;
-//   }
-
-//   requestAnimationFrame(updateTimer);
-// }
-
-// function startTimer() {
-//   if (!timerStarted) {
-//     startTime = new Date();
-//     timerStarted = true;
-//     updateTimer(); // Start the smooth timer update
-//   }
-// }
-
-// function stopTimer() {
-//   if (timerStarted) {
-//     timerStarted = false;
-//     const endTime = new Date();
-//     elapsedTime = endTime - startTime; // Update elapsedTime to ensure it's current
-//     const seconds = elapsedTime / 1000; // Convert to seconds
-//     const minutes = seconds / 60; // Convert to minutes
-    
-
-//     const totalChars = userInputField.innerText.length;
-//     console.log(totalChars);
-//     const wordsTyped = totalChars / 5; // Standard definition of a "word"
-//     const wpm = wordsTyped / minutes; // Calculate words per minute
-
-//     const timerDisplay = document.getElementById('js-timer');
-//     if (timerDisplay) {
-//       timerDisplay.textContent = `Final time: ${seconds.toFixed(2)} seconds, ${wpm.toFixed(2)} WPM`;
-//     }
-//   }
-// }
-
-// const updateFunction = () => {
-//   const userInput =  userInputField.value; // Use textContent for accuracy
-//   //const codeElement = document.querySelector('#js-typing-area');
-//   if (phraseText) {
-//     //const phrase = codeElement.getAttribute('data-phrase');
-
-//     console.log('Phrase:', phraseText); // Check what phrase contains
-//     console.log('User input:', userInput); // Check what userInput contains
-
-    
-//       // Check for completion using a more nuanced comparison if necessary
-//       if (userInput === phraseText) { // Consider case sensitivity based on your requirements
-//         stopTimer();
-//       } else if (!timerStarted && userInput.length > 0) {
-//         startTimer();
-//       }
-//       updateJSTypingArea(phraseText, userInput);
-//     } else {
-//       console.error('Phrase text is undefined!');
-//     }
-
-    
-  
-// };
-// document.getElementById('input').addEventListener('input', function(e) {
-//   const userInput = e.target.innerText;
-//   const phrase = "Your target phrase goes here. Include\nnew lines or long text to wrap.";
-//   let backgroundHTML = '';
-
-//   for (let i = 0; i < phrase.length; i++) {
-//     const char = phrase[i];
-//     const inputChar = userInput[i] || '';
-//     let spanClass = '';
-
-//     if (char === '\n') {
-//       backgroundHTML += '<br/>';
-//       continue;
-//     }
-
-//     if (inputChar === char) {
-//       spanClass = 'correct'; // Add your correct class styling
-//     } else if (inputChar) {
-//       spanClass = 'incorrect'; // Add your incorrect class styling
-//     }
-
-//     // Handle spaces specially to ensure they're visible
-//     const displayChar = char === ' ' ? '␣' : char; // Use a visible symbol for spaces
-//     backgroundHTML += `<span class="${spanClass}">${displayChar}</span>`;
-//   }
-
-//   document.getElementById('background').innerHTML = backgroundHTML;
-// });
-// // Listen for input changes
-// userInputField.addEventListener('input', (event) => {
-//     console.log(event)
-  
-//   updateFunction();
-  
-// });
-// userInputField.addEventListener('keydown', e => {
-//   if (e.key === 'Enter') {
-//       e.preventDefault(); // Prevent default Enter behaviors
-
-//       let currentValue = userInputField.value;
-//       let cursorPosition = userInputField.selectionStart;
-//       console.log(`Before calculation: cursorPosition=${cursorPosition}, currentValue=${currentValue}`);
-
-//     // Calculate new cursor position
-//     let { newPosition, modifiedValue } = calculateNewCursorPosition(currentValue, cursorPosition, phraseText);
-    
-//       // Debugging output
-//     console.log(`After calculation: newPosition=${newPosition}, modifiedValue=${modifiedValue}`);
-//     // Apply the modified value to the textarea
-//     userInputField.value = modifiedValue;
-//     updateFunction();
-//       setTimeout(() => {
-//         userInputField.setSelectionRange(newPosition, newPosition);
-     
-//       }, 10);
-//   }
-// });
-//   // Listen for cursor position changes without input changes (e.g., arrow keys, mouse click)
-//   userInputField.addEventListener('click', updateFunction);
-
-//   userInputField.addEventListener('keyup', (event) => {
-//     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Home' || event.key === 'End') {
-//       updateFunction();
-//     }
-//   });
-   
-  
-// });
-// function calculateNewCursorPosition(currentValue, cursorPosition, expectedPhrase) {
-//   let newPosition = cursorPosition; // Initialize newPosition to current cursorPosition
-
-//   // Split the expected phrase and current value into lines
-//   let expectedLines = expectedPhrase.split('\n');
-//   let currentLines = currentValue.split('\n');
-
-//   // Find the current line number
-//   let currentLineNumber = currentValue.substring(0, cursorPosition).split('\n').length - 1;
-//   let currentLine = currentLines[currentLineNumber] || '';
-//   let expectedLine = expectedLines[currentLineNumber] || '';
-
-//   // If the current line is incomplete and Enter is pressed
-//   if (currentLine.length < expectedLine.length) {
-//     let incompletePart = expectedLine.substring(currentLine.length);
-//     let invalidInput = incompletePart.replace(/./g, '|'); // Replace all characters with '|'
-//     currentLines[currentLineNumber] += invalidInput;
-
-//     currentValue = currentLines.join('\n'); // Update the currentValue with the modified line
-//     newPosition = currentValue.length; // Move cursor to the end of the modified line
-//   }
-
-//   // Move to the next line if applicable
-//   if (currentLineNumber + 1 < expectedLines.length) {
-//     let nextLineExpected = expectedLines[currentLineNumber + 1];
-//     let leadingSpaces = nextLineExpected.match(/^ */)[0].length; // Count leading spaces for indentation
-//     newPosition = currentValue.length + 1 + leadingSpaces; // Adjust for new line and indentation
-//   } else {
-//     newPosition = currentValue.length; // If there are no more lines, stay at the end
-//   }
-
-//   return { newPosition, modifiedValue: currentValue };
-// }
-
-// //recent===============================================================================================================================================
-// function calculateNewCursorPosition(currentValue, cursorPosition, expectedPhrase) {
-//   let newPosition = cursorPosition; // Initialize newPosition to current cursorPosition
-//   let modifiedValue = currentValue; // Start with the current value, potentially modify it below
-
-//   // Split the expected phrase and current value into lines
-//   let expectedLines = expectedPhrase.split('\n');
-//   let currentLines = currentValue.split('\n');
-
-//   // Find the current line number
-//   let currentLineNumber = currentValue.substring(0, cursorPosition).split('\n').length - 1;
-//   let currentLine = currentLines[currentLineNumber] || '';
-//   let expectedLine = expectedLines[currentLineNumber] || '';
-
-//   // If the current line is shorter than expected, append error indicators
-//   if (currentLine.length < expectedLine.length) {
-//     let incompletePart = expectedLine.substring(currentLine.length);
-//     let invalidInput = incompletePart.replace(/./g, '|'); // Indicate errors
-//     currentLines[currentLineNumber] += invalidInput;
-//     modifiedValue = currentLines.join('\n'); // Rebuild the full text
-//   }
-
-//   // Moving to the next line if necessary
-//   if (currentLineNumber + 1 < expectedLines.length) {
-//     // We have another line to go to
-//     let nextLine = currentLineNumber + 1 < currentLines.length ? currentLines[currentLineNumber + 1] : "";
-//     let leadingSpacesNextLine = expectedLines[currentLineNumber + 1].match(/^ */)[0].length; // Count leading spaces for indentation of the next expected line
-//     if (nextLine.length === 0 || nextLine.length < leadingSpacesNextLine) {
-//       // If the next line is empty or not fully indented, adjust it
-//       modifiedValue += '\n' + " ".repeat(leadingSpacesNextLine); // Add new line and indent for the next line
-//       newPosition = modifiedValue.length; // Move cursor to the end of the new line (after indentation)
-//     } else {
-//       // Move cursor to the beginning of the next line if it already exists
-//       let positionToNextLine = currentValue.indexOf('\n', cursorPosition) + 1; // Find next line break and move one character beyond it
-//       newPosition = positionToNextLine + leadingSpacesNextLine; // Adjust for indentation
-//     }
-//   }
-
-//   return { newPosition, modifiedValue };
-// }
 function darkExpected() {
   return localStorage.theme === 'dark' || (!('theme' in localStorage) &&
     window.matchMedia('(prefers-color-scheme: dark)').matches);

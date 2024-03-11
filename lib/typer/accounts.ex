@@ -15,7 +15,6 @@ defmodule Typer.Accounts do
     new_preferences =
       preferences
       |> Map.update("show_elixir", not Map.get(preferences, "show_elixir", true), &not &1)
-
     Typer.Accounts.update_user_preferences(user, new_preferences)
   end
 
@@ -31,6 +30,18 @@ defmodule Typer.Accounts do
   end
 
   ## Database getters
+
+  def get_user_from_session(session) do
+    token = Map.get(session, "user_token")
+    if token do
+      get_user_by_session_token(token)
+    else
+      # Handle the case where token is nil. This could mean returning nil or some default value.
+      nil
+    end
+  end
+
+
 
   @doc """
   Gets a user by email.

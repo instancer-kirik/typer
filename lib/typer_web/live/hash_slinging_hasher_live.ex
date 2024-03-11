@@ -1,12 +1,9 @@
 defmodule TyperWeb.HashSlingingHasherLive do
 
   use TyperWeb, :live_view
-
   # alias Typer.Game.Phrase
   alias Typer.HashData
   # alias TyperWeb.Router.Helpers, as: Routes
-
-
   @impl true
   def render(%{loading: true} =assigns) do
       ~H"""
@@ -31,7 +28,11 @@ defmodule TyperWeb.HashSlingingHasherLive do
         <form id="customPhraseForm" action="/set_custom_phrase" method="post">
           <input type="hidden" name="custom_phrase" id="custom_phrase_hidden" value={@custom_phrase}>
           <input type="hidden" name="_csrf_token" value={@csrf_token} />
+          <%= if @accepted_cookies do %>
           <button type="submit" class="buttonly">Type the Hash</button>
+          <% else %>
+          <p>Accept cookies to type this(uses custom_phrase)</p>
+          <% end %>
         </form>
 
 
@@ -44,14 +45,34 @@ defmodule TyperWeb.HashSlingingHasherLive do
     </div>
     """
   end
+  @impl true
+def mount(_params, session, socket) do
+    current_user = Typer.Accounts.get_user_from_session(session) || nil
+    accepted_cookies = Map.get(session, "accepted_cookies", false)
+    csrf_token = Plug.CSRFProtection.get_csrf_token()
+    dark_mode = session[:dark_mode] || true
+    IO.inspect(session["dark_mode"], label: "Dark Mode Session Value")
+    if connected?(socket) do
+
+
+    socket=
+        socket
+        |> assign( loading: false,csrf_token: csrf_token, dark_mode: dark_mode, message: nil, disable_submit: true, custom_phrase: "", accepted_cookies: accepted_cookies, current_user: current_user)
+
+ {:ok, socket}
+    else
+        {:ok, assign(socket, loading: true,csrf_token: csrf_token, dark_mode: dark_mode, message: nil, disable_submit: true, custom_phrase: "", accepted_cookies: accepted_cookies)}
+    end
+end
 @impl true
 def handle_event("hash_calculated", %{"hash" => hash, "fileName" => file_name} = _params, socket) do
   # Assuming `current_user.id` is available. Adjust accordingly if not.<form phx-change="validate" action="/set_custom_phrase" method="post">   </form>disabled={@disable_submit}
-  %{current_user: user} = socket.assigns
+  user_id = socket.assigns.current_user && socket.assigns.current_user.id
+
   hash_params = %{
     hash: hash,
-    app_title: file_name, # Assuming you have a field for the file name, adjust as necessary
-    user_id: user.id
+    app_title: file_name, # Assuming you have a field for the file name, adjust as necessarys
+    user_id: user_id
   }
   # IO.inspect(hash_params, label: "AAAAAAAAAAAAA")
   case HashData.save_hash(hash_params) do
@@ -80,29 +101,6 @@ def handle_event("hash_calculated", %{"hash" => hash, "fileName" => file_name} =
   end
 end
 
-# @impl true
-# def handle_event("save-hash", %{"hash" => hash, "fileName" => file_name} = _params, socket) do
-#   hash_params = %{
-#     "hash" => hash,
-#     "file_name" => file_name,
-#     "user_id" => socket.assigns.current_user.id
-#   }
-
-#   case HashData.save_hash(hash_params) do
-#     {:ok, _hash_data} ->
-#       # Hash and filename were successfully saved
-#       {:noreply, assign(socket, message: "AAAAAAAAHash and filename saved successfully.")}
-
-#     {:error, :exists} ->
-#       # Hash already exists, no need to save again
-#       {:noreply, assign(socket, message: "AAAAAAHash already exists.")}
-
-#     {:error, _changeset} ->
-#       # There was an error saving the hash
-#       {:noreply, assign(socket, message: "AAAAAAAThere was an error saving the hash.")}
-#   end
-# end
-
 def handle_event(event, params, socket) do
   IO.inspect(event, label: "Event")
   IO.inspect(params, label: "Params")
@@ -111,32 +109,8 @@ end
 
 
 
-
-  @impl true
-  def mount(_params, session, socket) do
-
-      csrf_token = Plug.CSRFProtection.get_csrf_token()
-      dark_mode = session[:dark_mode] || true
-      IO.inspect(session["dark_mode"], label: "Dark Mode Session Value")
-      if connected?(socket) do
-
-
-      # form =
-      # %HashData{}
-      # |> HashData.changeset(%{})
-      # |> to_form(as: "hash")
-      socket=
-          socket
-          |> assign( loading: false,csrf_token: csrf_token, dark_mode: dark_mode, message: nil, disable_submit: true, custom_phrase: "")
-          #|> stream(:phrases, Game.list_phrases())
-   {:ok, socket}
-      else
-          {:ok, assign(socket, loading: true,csrf_token: csrf_token, dark_mode: dark_mode, message: nil, disable_submit: true, custom_phrase: "")}
-      end
-  end
-
 end
-#<div id="content">
+#<div id="content">s
 # <form id="hashForm" action="/add-hash" method="POST" enctype="multipart/form-data"
 # phx-post="/add-hash" hx-target="#hashResults" hx-swap="outerHTML">
 # <input type="hidden" name="fileName" id="fileName">

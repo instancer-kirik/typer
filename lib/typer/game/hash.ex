@@ -9,10 +9,19 @@ defmodule Typer.Game.Hash do
     timestamps(type: :utc_datetime)
   end
 
-  @doc false
-  def changeset(hash, attrs) do
-    hash
-    |> cast(attrs, [:app_title, :hash, :user_id])
-    |> validate_required([:app_title, :hash, :user_id])
-  end
+
+#   def changeset(hash, attrs) do
+#     hash
+#     |> cast(attrs, [:app_title, :hash])
+#     |> validate_required([:app_title, :hash])
+
+#   end
+# end
+@doc false
+def changeset(hash, attrs) do
+  hash
+  |> cast(attrs, [:app_title, :hash, :user_id]) # Ensure :user_id is included if you're setting it directly
+  |> validate_required([:app_title, :hash])
+  |> foreign_key_constraint(:user_id) # Helpful for handling deletion or nullification behavior
+end
 end

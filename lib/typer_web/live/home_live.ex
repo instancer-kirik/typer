@@ -5,7 +5,7 @@ defmodule TyperWeb.HomeLive do
     alias Typer.Game
     alias TyperWeb.Router.Helpers, as: Routes
 
-
+#
     @impl true
     def render(%{loading: true} =assigns) do
         ~H"""
@@ -18,61 +18,106 @@ defmodule TyperWeb.HomeLive do
     def render(assigns) do
 
         ~H"""
-        <main class = "dark-mode">
+        <main class={if(@dark_mode, do: "dark-mode", else: "")}>
 
-            <div class = "dark-mode">
+            <div class = "">
+
+            <%= if not @accepted_cookies do %>
+              <div class="cookie-popup">
+                <p style="color: Silver;">COOKIES? (for custom_phrase storage, dark_mode, and accepted_cookies status)</p>
+                <a href="/update-cookies" phx-click="accept_cookies">Accept</a>
+              </div>
+            <% end %>
             <h1 class="text-2x1">Typer</h1>
-            <h1><%= "#{@dark_mode}" %></h1>
-            <.button phx-click="navigate_to_hasher">Go to Hash Slinging Hasher</.button>
-            <.button type="button" phx-click={JS.dispatch("toogle-darkmode")}>DARKMODE</.button>
-            <a href="/toggle_dark_mode" class="dark-mode-toggle">Toggle Dark Mode</a>
-            <.button type="button" phx-click={show_modal("new-phrase-modal")}>Create Phrase</.button>
-            <form phx-change="validate" action="/set_custom_phrase" method="post">
-                <input type="hidden" name="_csrf_token" value={@csrf_token} />
-                <textarea name="custom_phrase" type="textarea" placeholder="Enter custom phrase here"></textarea>
-                <button type="submit" disabled={@disable_submit} class="buttonly">Type this</button>
-            </form>
 
+
+            <.button phx-click="navigate_to_hasher">Go to Hash Slinging Hasher</.button>
+
+            <%= if @accepted_cookies do %>
+              <!-- Render dark mode toggle -->
+            <.button id="darkmode-toggle" type="button" phx-hook="DarkModeToggle" data-dark-mode={@dark_mode} >DARKMODE</.button>
+            <a href="/toggle_dark_mode" class="dark-mode-toggle">Toggle Dark Mode</a>
+            <a href="/toggle_show_elixir"class= "buttonly" style="color: Silver; background-color: DarkRed;">Toggle Elixir Text Rendering</a>
+            <% else %>
+              <!-- Show message or disabled button -->
+              <button disabled="true">Accept Cookies to Use Dark Mode</button>
+           <% end %>
+            <.button type="button" phx-click={show_modal("new-phrase-modal")}>Create Phrase</.button>
+            <%= if @accepted_cookies do %>
+            <!-- Allow submitting custom phrases -->
+
+
+              <form phx-change="validate" action="/set_custom_phrase" method="post">
+                  <input type="hidden" name="_csrf_token" value={@csrf_token} />
+                  <textarea name="custom_phrase" type="textarea" placeholder="Enter custom phrase here"></textarea>
+                  <button type="submit" disabled={@disable_submit} class="buttonly" style="background-color: rgb(100, 22, 44)" >Type this</button>
+              </form>
+
+
+            <% else %>
+              <p>custom_phrase</p>
+            <% end %>
             <div id="opts" phx-update="stream" class= " flex flex-col gap-2">
                 <div :for ={{dom_id, phrase} <- @streams.phrases} id={dom_id} class = "w-full mx-auto flex flex-col gap-2 p-4 border rounded" style="font-size: 10px;">
-                <p  ><%= phrase.user.email %></p>
+
                 <a href="#" phx-click="show-phrase" phx-value-id={phrase.id}><%= phrase.text %></a>
-                <!-- Delete button for each phrase -->
+                <!-- Delete button for each phrase  <p  ><%= phrase.user.email %></p>-->
+                  <%= if @current_user && @current_user.email == "instance.select@gmail.com" do %>
                   <button phx-click="delete-phrase" phx-value-id={phrase.id}>Delete</button>
+                  <% end %>
                 </div>
             </div>
-            <.modal id="new-phrase-modal">
-            <.simple_form for={@form} phx-submit= "save-phrase">
-                <.input field={@form[:text]} type="textarea" label= "Phrase" required />
+
+            <.modal id="new-phrase-modal" >
+            <div class="modal-content">
+            <%= if @current_user && @current_user.email == "instance.select@gmail.com" do %>
+              <.simple_form for={@form} phx-submit="save-phrase" class="modal-form">
+                <.input field={@form[:text]} type="textarea" label="Phrase" required />
                 <.button type="submit" phx-disable-with="Saving...">Create Phrase</.button>
-            </.simple_form>
-            </.modal>
+              </.simple_form>
+              <% else %>
+              <p>No public phrase approval yet.</p>
+              <% end %>
             </div>
+          </.modal>
+          </div>
+
+
         </main>
         """
     end
-
-    @impl true
+#s
+        @impl true
     def mount(_params, session, socket) do
+      csrf_token = Plug.CSRFProtection.get_csrf_token()
+      dark_mode = session["dark_mode"] || false
+      current_user = Typer.Accounts.get_user_from_session(session)
 
-        csrf_token = Plug.CSRFProtection.get_csrf_token()
-        dark_mode = session[:dark_mode] || true
-        IO.inspect(session["dark_mode"], label: "Dark Mode Session Value")
-        if connected?(socket) do
+      IO.inspect(current_user, label: "AAAA")
+      new_user = Map.get(session, "accepted_cookies", false)
+      # accepted_cookies = !Map.get(session, "accepted_cookies", false)
+      form = %Phrase{} |> Phrase.changeset(%{}) |> to_form(as: "phrase")
 
-
-        form =
-        %Phrase{}
-        |> Phrase.changeset(%{})
-        |> to_form(as: "phrase")
-        socket=
-            socket
-            |> assign(form: form, loading: false,csrf_token: csrf_token, disable_submit: true, dark_mode: dark_mode)
-            |> stream(:phrases, Game.list_phrases())
-     {:ok, socket}
-        else
-            {:ok, assign(socket, loading: true,csrf_token: csrf_token, disable_submit: true, dark_mode: dark_mode)}
-        end
+      if connected?(socket) do
+        {:ok,
+        socket
+        |> assign(:form, form)
+        |> assign(:loading, false)
+        |> assign(:csrf_token, csrf_token)
+        |> assign(:disable_submit, true)
+        |> assign(:dark_mode, dark_mode)
+        |> assign(:accepted_cookies, new_user)
+        |> assign(:current_user, current_user)
+        |> stream(:phrases, Game.list_phrases())}
+      else
+        {:ok,
+        socket
+        |> assign(:loading, true)
+        |> assign(:csrf_token, csrf_token)
+        |> assign(:disable_submit, true)
+        |> assign(:dark_mode, dark_mode)
+        |> assign(:accepted_cookies, new_user)}
+      end
     end
 
     @impl true
@@ -87,7 +132,7 @@ defmodule TyperWeb.HomeLive do
             {:noreply, push_redirect(socket, to: Routes.home_path(socket,:index))}
 
           {:error, _changeset} ->
-            # Handle the error case without redirection
+            # Handle the error case without redirections
             {:noreply, socket}
         end
     end
@@ -108,10 +153,14 @@ defmodule TyperWeb.HomeLive do
       {:noreply, assign(socket, streams: %{phrases: phrases})}
     end
     def handle_event("toggle_dark_mode", _params, socket) do
-      # Trigger client-side navigation to the controller action
-      {:noreply, push_redirect(socket, to: "/toggle_dark_mode")}
+      new_dark_mode = !socket.assigns.dark_mode
+      {:noreply, assign(socket, dark_mode: new_dark_mode)}
     end
-
+    @impl true
+    def handle_event("accept_cookies", _params, socket) do
+      push_patch(socket, to: Routes.session_path(socket, :update_cookies))
+      {:noreply, assign(socket, accepted_cookies: false)}
+    end
     @impl true
     def handle_event("navigate_to_hasher", _params, socket) do
       {:noreply, push_redirect(socket, to: Routes.hash_slinging_hasher_path(socket, :index))}
@@ -122,6 +171,7 @@ defmodule TyperWeb.HomeLive do
       #   # If it's an Ecto.Changeset, you would use `Ecto.Changeset.traverse_errors`.
       #   Map.get(error_map, :text, [])
       # end
+
 
 
     def handle_custom_phrase(custom_phrase_text) do
