@@ -24,7 +24,7 @@ defmodule TyperWeb.HomeLive do
 
             <%= if not @accepted_cookies do %>
               <div class="cookie-popup">
-                <p style="color: Silver;">COOKIES? (for custom_phrase storage, dark_mode, and accepted_cookies status)</p>
+                <p style="color: Silver;">COOKIES? (for custom_phrase storage, dark_mode, view toggle and accepted_cookies status)</p>
                 <a href="/update-cookies" phx-click="accept_cookies">Accept</a>
               </div>
             <% end %>
