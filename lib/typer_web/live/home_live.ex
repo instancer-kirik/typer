@@ -9,7 +9,7 @@ defmodule TyperWeb.HomeLive do
     @impl true
     def render(%{loading: true} =assigns) do
         ~H"""
-        <body class={if(@dark_mode, do: "dark-mode", else: "")}>
+        <body class={if(@dark_mode, do: "dark-mode", else: "")} style= "color: dimgrey;">
         Typer is loading...
         </body>
         """
@@ -28,7 +28,7 @@ defmodule TyperWeb.HomeLive do
                 <a href="/update-cookies" phx-click="accept_cookies">Accept</a>
               </div>
             <% end %>
-            <h1 class="text-2x1">Typer</h1>
+            <h1 class="text-2x1 text-zinc-400">Typer</h1>
 
 
             <.button phx-click="navigate_to_hasher">Go to Hash Slinging Hasher</.button>
@@ -40,7 +40,7 @@ defmodule TyperWeb.HomeLive do
             <a href="/toggle_show_elixir"class= "buttonly" style="color: Silver; background-color: DarkRed;">Toggle Elixir Text Rendering</a>
             <% else %>
               <!-- Show message or disabled button -->
-              <button disabled="true">Accept Cookies to Use Dark Mode</button>
+              <button style= "color: silver;" disabled="true">Accept Cookies to Use Dark Mode</button>
            <% end %>
             <.button type="button" phx-click={show_modal("new-phrase-modal")}>Create Phrase</.button>
             <%= if @accepted_cookies do %>
@@ -50,12 +50,12 @@ defmodule TyperWeb.HomeLive do
               <form phx-change="validate" action="/set_custom_phrase" method="post">
                   <input type="hidden" name="_csrf_token" value={@csrf_token} />
                   <textarea name="custom_phrase" type="textarea" placeholder="Enter custom phrase here"></textarea>
-                  <button type="submit" disabled={@disable_submit} class="buttonly" style="background-color: rgb(100, 22, 44)" >Type this</button>
+                  <button type="submit" disabled={@disable_submit} class="buttonly" style="background-color: rgb(100, 22, 44); color: Silver;" >Type this</button>
               </form>
 
 
             <% else %>
-              <p>custom_phrase</p>
+              <p style= "color: silver;">also for custom_phrase</p>
             <% end %>
             <div id="opts" phx-update="stream" class= " flex flex-col gap-2">
                 <div :for ={{dom_id, phrase} <- @streams.phrases} id={dom_id} class = "w-full mx-auto flex flex-col gap-2 p-4 border rounded" style="font-size: 10px;">

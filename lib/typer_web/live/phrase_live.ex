@@ -2,8 +2,7 @@ defmodule TyperWeb.PhraseLive do
   use TyperWeb, :live_view
 
   alias Typer.Game
-
-
+#s
 
   @impl true
 def render(assigns) do
@@ -22,19 +21,20 @@ def render(assigns) do
       <div id="js-timer">READY</div>
       </div>
       <div id="countdown" style = "padding= 0;" phx-update="ignore" phx-hook="Countdown">3..</div>
-    <!-- Dynamically update this content based on input -->
 
-    <!-- Transparent contenteditable for user input -->
+      <!-- contenteditable div for input and styling based on correctness -->
 
-      <div id="editable-container" name="user_input" phx-hook="EditableContainer" phx-debounce="1000" phx-update="ignore" contenteditable="true" data-show-elixir={@show_elixir |> to_string()} style="position: relative; z-index: 2; background: transparent; white-space: pre-wrap;">
+      <div id="editable-container" name="user_input" phx-hook="EditableContainer" phx-debounce="1000" phx-update="ignore" contenteditable="true" spellcheck="false" data-show-elixir={@show_elixir |> to_string()} style="position: relative; z-index: 2; background: transparent; white-space: pre-wrap;">
      <span style = "display: inline;" id="remaining-text"><%= render_typing_area(@phrase, @user_input) %></span>
 
       </div>
+
     <br>
+
     <div id="completion-message" phx-update="ignore" class="completion-message"></div>
     <%= if @accepted_cookies do %>
-    <a href="/toggle_show_elixir" id = "elixir-toggle" class= "buttonly" style="color: Silver; background-color: DarkRed;" phx-click="toggle_show_elixir">Toggle Elixir Version</a>
-
+    <!-- <a href="/toggle_show_elixir" id = "elixir-toggle" class= "buttonly" style="color: Silver; background-color: DarkRed;" phx-click="toggle_show_elixir">Toggle Elixir Version</a>
+    -->
     <% else %>
     <p>Accept cookies to toggle elixir view</p>
     <% end %>
@@ -200,7 +200,7 @@ def render(assigns) do
       |> maybe_complete(input)
 
     {:noreply, updated_socket}
-    #{:noreply, assign(socket, user_input: input)}s
+    #{:noreply, assign(socket, user_input: input)}ss
   end
   # def handle_event("toggle_show_elixir", _params, socket) do
   #   user = socket.assigns.current_user

@@ -162,6 +162,8 @@ Hooks.Countdown = {
     }, 1000);
   }
 };
+
+
 Hooks.EditableContainer = {
   
   mounted() {
@@ -173,7 +175,12 @@ Hooks.EditableContainer = {
      this.showElixir = this.el.dataset.showElixir === "true";
     const phraseData =document.getElementById("phrase-data");
     if (!phraseData ) return;
-    this.phraseText = phraseData.dataset.phraseText;
+    this.phraseText =phraseData.dataset.phraseText; //this.convertToEntities(phraseData.dataset.phraseText);
+    // Convert your phrase to use HTML entities
+     // Assuming phraseData.dataset.phraseText might contain HTML entities/tags
+   
+    //this.phraseText = cleanText; // Cleaned and ready for counting
+    this.typableCharacters =this.countText2(phraseData.dataset.phraseText); // Accurate character count
     this.typedLength = 0; // Tracks how many characters have been correctly or incorrectly typeds
 
     this.editableContainer = document.getElementById('editable-container');
@@ -181,6 +188,11 @@ Hooks.EditableContainer = {
   
     this.rightArrow();
       
+
+    // this.editableContainer.addEventListener('input', () => {
+    //   this.updateContent();
+    // });
+
     // Assuming `this.phraseText` is already defined within your hook
     this.el.addEventListener('keypress', (e) => {
       this.rightArrow();
@@ -204,17 +216,62 @@ Hooks.EditableContainer = {
     });
 
     this.el.focus();
+    // Calculate initial indentation of the first line and adjust cursor position accordingly
+  this.adjustCursorForInitialNewlinesAndIndentation();
   },//mounted
   
   updated() {
     this.el.focus();
   },
+  // updateContent() {
+  //   // Get the raw text content
+  //   let textContent = this.editableContainer.innerText;
+  
+  //   // Clear the current content
+  //   this.editableContainer.innerHTML = '';
+  
+  //   // Rebuild the content, wrapping each known character in a span
+  //   // and appending the remaining text in its own span
+  //   [...textContent].forEach(char => {
+  //     const charSpan = document.createElement('span');
+  //     charSpan.textContent = char;
+  //     this.editableContainer.appendChild(charSpan);
+  //   });
+  
+  //   // Append the remaining text span if necessary
+  //   const remainingTextSpan = document.createElement('span');
+  //   remainingTextSpan.id = 'remaining-text';
+  //   // Set the remaining text content appropriately
+  //   //remainingTextSpan.textContent = /* remaining text */;
+  //   this.editableContainer.appendChild(remainingTextSpan);
+  
+  //   // Ensure cursor management to place the cursor correctly after updates
+  //   this.setCursorPosition();
+  // },
+ 
+
+
   handleCharacterInput(char) {
     
-    const correctChar = this.phraseText.charAt(this.typedLength);
+    let correctChar = this.phraseText.charAt(this.typedLength);
+
+    // Special handling for HTML entities
+  if (correctChar === '&') {
+    // Check if the next sequence is an HTML entity, adjust `typedLength` and `correctChar` accordingly
+    const entityMatch = this.phraseText.substring(this.typedLength).match(/^(&[a-z]+;)/);
+    if (entityMatch) {
+      correctChar = this.htmlEntityToChar(entityMatch[0]); // Convert HTML entity to char for comparison
+      if (char === correctChar) {
+        this.typedLength += entityMatch[0].length - 1; // Adjust typedLength to skip the entire entity
+      }
+    }
+  }
     // Check for special characters like tabs (\t) that need to be handled differently
     const isCorrect = char === correctChar || (correctChar === '\n' && char === 'Enter') || (correctChar === '\t' && char === 'Tab');
     const isEndOfLine = correctChar === '\n' || correctChar === ''; // Check if at the end of a line or text
+
+
+
     if (isEndOfLine) {
       //NO OP it just waits for enter
       // Prevent adding the space directly
@@ -238,9 +295,6 @@ Hooks.EditableContainer = {
         } else {
           this.appendChar(char, true);
         }
-        this.typedLength++;
-        this.moveCaretBeforeRemainingText();
-        this.updateRemainingText();
       } else {
         if (correctChar === '\n') {
           this.appendNewLine();
@@ -255,14 +309,10 @@ Hooks.EditableContainer = {
         }else{
           this.appendChar(char, false);
         }
-        this.typedLength++;
-        this.moveCaretBeforeRemainingText();
-        this.updateRemainingText();
-        
-          
-        // Optionally handle incorrect input
       }
-      
+      this.typedLength++;
+      this.moveCaretBeforeRemainingText();
+      this.updateRemainingText();
     }//isNotEndOfLine
     if (this.phraseText) {
       // console.log('Phrase:', this.phraseText);
@@ -299,6 +349,9 @@ Hooks.EditableContainer = {
   getIndentationLevel(line) {
     console.log(line);
     // Matches leading spaces in the line
+
+
+    
     const result = line.match(/^(\s*)/);
     
     return result ? result[1].length : 0;
@@ -316,19 +369,22 @@ Hooks.EditableContainer = {
     this.remainingTextSpan.parentNode.insertBefore(tabSpan, this.remainingTextSpan);
   },
   updateRemainingText() {
+    
     let html = '';
   
     // Split the text into segments of words and whitespace/newlines
     const segments = this.phraseText.substring(this.typedLength).split(/(\s+)/);
-  
+    console.log("this.phraseText")
+    console.log(this.phraseText)
     // Process each segment, wrapping words in spans and preserving whitespace
     segments.forEach(segment => {
+      console.log(segment)
       if (segment.match(/\s+/)) {
         // For segments that are purely whitespace, replace spaces with &nbsp; but leave newlines as <br>
         html += segment.replace(/\n/g, '<br>');
       } else {
         // Wrap words in spans to keep them unbroken; no &nbsp; needed here
-        html += `<span>${segment}</span>`;
+        html += `<span>${this.escapeHtml(segment)}</span>`;
       }
     });
   
@@ -349,7 +405,108 @@ Hooks.EditableContainer = {
           
           this.editableContainer.focus(); // Ensure the editable container is focused
         },
+  escapeHtml(text) {
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  },
+        
+  // Utility function to convert HTML entities back to characters for comparison
+  htmlEntityToChar(entity) {
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = entity;
+    return textarea.value;
+  },
+  getTextContentFromHtml(htmlString) {
+    const tempDiv = document.createElement("div");
+    // Set the innerHTML to the provided string
+    tempDiv.innerHTML = htmlString;
+    // Use textContent to get the decoded and tag-free content
+    return tempDiv.textContent || tempDiv.innerText || "";
+},
+inspectTextForCounts(text) {
+  // Assuming \n for newlines; adjust if necessary (e.g., \r\n for Windows-style breaks)
+  const newlineAdjustedText = text.replace(/\r\n/g, "\n");
+  const totalCharacters = newlineAdjustedText.length;
 
+  // Detailed inspection for debugging
+  console.log(`Total characters (including spaces and line breaks): ${totalCharacters}`);
+  newlineAdjustedText.split('').forEach((char, index) => {
+      console.log(`${index + 1}: '${char}' (${char.charCodeAt(0)})`);
+  });
+
+  return totalCharacters;
+},
+countText(htmlString) {
+  const div = document.createElement('div');
+  div.innerHTML = htmlString;
+  const text = div.textContent || div.innerText || "";
+  // Replace all types of whitespace with a single space for consistent counting
+  const cleanedText = text.replace(/\s+/g, ' ').trim();
+  return cleanedText.length;
+},
+countText2(text) {
+  // Replace each tab with 4 spaces
+  const textWithTabsAsSpaces = text.replace(/\t/g, "    ");
+  
+  // Remove all line breaks (\r for carriage return, \n for newline)
+  const textWithoutLineBreaks = textWithTabsAsSpaces.replace(/[\r\n]+/g, '');
+  
+  // Now, count the remaining characters
+  const totalCharacters = textWithoutLineBreaks.length;
+  
+  return totalCharacters;
+},
+countText3(text) {
+  // Convert tabs to 4 spaces
+  let convertedText = text.replace(/\t/g, "    ");
+  
+  // Split the text by newlines to process lines individually
+  let lines = convertedText.split(/\r?\n/);
+
+  // Process each line to trim leading and trailing spaces as they might not be intended for counting
+  // Especially leading spaces before a line break could be unintentional
+  lines = lines.map(line => line.trimStart());
+
+  // Rejoin the lines without newlines as they are not counted
+  const processedText = lines.join('');
+
+  // Count the characters in the processed text
+  const totalCharacters = processedText.length;
+  
+  return totalCharacters;
+},
+  // Method to adjust cursor for initial newlines and indentation
+adjustCursorForInitialNewlinesAndIndentation() {
+  let textAfterNewlines = this.phraseText;
+  // Skip leading newlines
+  while(textAfterNewlines.startsWith('\n')) {
+    this.appendNewLine(true); // true to simulate correct input; adjust based on your method signature
+    textAfterNewlines = textAfterNewlines.substring(1);
+    this.typedLength++; // Increase typedLength to account for the newline character
+  }
+
+  // Now calculate the indentation of the first non-empty line
+  const initialIndentation = this.getIndentationLevel(textAfterNewlines);
+  for (let i = 0; i < initialIndentation; i++) {
+    console.log("APPENDING");
+    this.appendChar(' ', true); // Assuming space for indentation; adjust for tabs as needed
+    this.typedLength++; // Adjust typedLength for each space added
+  }
+  
+  this.moveCaretBeforeRemainingText(); // Ensure the caret is correctly positioned after adjustments
+},
+  adjustCursorForInitialIndentation() {
+    const initialIndentation = this.getIndentationLevel(this.phraseText);
+    // Assuming appendChar method can handle space ' ' and correctly position it
+    for (let i = 0; i < initialIndentation; i++) {
+      this.handleCharacterInput(" "); // Pass 'true' to simulate correct input for the sake of positioning
+    }
+    this.moveCaretBeforeRemainingText(); // Ensure the caret is moved after the initial spaces
+  },
         rightArrow() {
           // I can just simulate a rightarrow
     
@@ -415,7 +572,7 @@ Hooks.EditableContainer = {
               this.typedLength++;
               
             }
-          }
+          }///////////////////////////BRB
         
           this.updateRemainingText();
           this.moveCaretBeforeRemainingText();
@@ -489,22 +646,49 @@ Hooks.EditableContainer = {
       }
     }
   },
+  // verifyAndHandleTimer() {
+  //   const charSpans = this.el.querySelectorAll(':scope > span:not(#remaining-text)');
+  //   // Check if there are no spans with the 'incorrect' class
+  //   // const noErrors = Array.from(charSpans).every(span => !span.classList.contains('incorrect'));
+  //   const allCorrect = Array.from(charSpans).every(span => span.classList.contains('correct'));
+  //   // Ensure the length matches the target phrase to consider completion
+  //   if (allCorrect && charSpans.length === this.phraseText.length) {
+  //     console.log("Input complete without errors.");
+  //     this.stopTimer();
+  //     document.getElementById('completion-message').innerText="🎉 Congratulations! You've completed the typing task! 🎉"
+  //     // Additional logic for handling the completion of input without errors
+  //   } else {
+  //     // Handle cases where input is not complete or contains errors
+  //   }
+  // }  
   verifyAndHandleTimer() {
+    
     const charSpans = this.el.querySelectorAll(':scope > span:not(#remaining-text)');
-    // Check if there are no spans with the 'incorrect' class
-    // const noErrors = Array.from(charSpans).every(span => !span.classList.contains('incorrect'));
     const allCorrect = Array.from(charSpans).every(span => span.classList.contains('correct'));
+    
+   
+    // Total attempted characters include both correct and incorrect ones
+    const totalAttempted = charSpans.length;
+    const correctChars = Array.from(charSpans).filter(span => span.classList.contains('correct')).length;
+    const m = `totalAttempted ${totalAttempted} all: ${this.typableCharacters}`;
+    console.log(m);
     // Ensure the length matches the target phrase to consider completion
-    if (allCorrect && charSpans.length === this.phraseText.length) {
-      console.log("Input complete without errors.");
+    if( totalAttempted === this.typableCharacters) {
+      if (allCorrect){
+       
       this.stopTimer();
-      document.getElementById('completion-message').innerText="🎉 Congratulations! You've completed the typing task! 🎉"
+      document.getElementById('completion-message').innerText = "🎉 Congratulations! You've completed the typing task! 🎉";
       // Additional logic for handling the completion of input without errors
     } else {
-      // Handle cases where input is not complete or contains errors
+      this.stopTimer();
+  
+      const accuracy = (correctChars / totalAttempted) * 100;
+      
+      document.getElementById('completion-message').innerText = `Yay. You\'ve concluded the typing task! Accuracy: ${accuracy.toFixed(2)}%`;
     }
-  }  
-
+  }
+  
+  }
 
 
 };

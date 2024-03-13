@@ -39,7 +39,9 @@ defmodule TyperWeb.UserRegistrationLive do
           <:actions>
             <.button phx-disable-with="Creating account..." class="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">Create an account</.button>
           </:actions>
+
         </.simple_form>
+        <p>so it's gonna seem like an error on creating account. It doesn't redirect and sign in. Idk why; it works locally. I didn't write that impl.</p>
         </div>
       </div>
       """

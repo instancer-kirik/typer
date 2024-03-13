@@ -353,7 +353,7 @@ textarea {
 /* Reset the opacity and set the color for p, a, and label elements */
 p, a, label {
   opacity: 1; /* Make sure text is fully opaque */
-  color: #333; /* Dark grey color for better readability */
+  color: #9e9999; /* Dark grey color for better readability */
   /* You can adjust the color value to fit your design */
 }
 

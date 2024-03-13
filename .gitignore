@@ -35,3 +35,25 @@ typer-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# # Fly.io specific
+# .fly/
+# fly.toml
+# fly.lock # if applicable
+
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+.env.development
+
+# Dependency directories
+node_modules/
+vendor/
+
+# Build output directories
+dist/
+build/
+public/
+
+# Log files
+*.log
