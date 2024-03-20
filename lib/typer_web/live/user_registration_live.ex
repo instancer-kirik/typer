@@ -41,7 +41,7 @@ defmodule TyperWeb.UserRegistrationLive do
           </:actions>
 
         </.simple_form>
-        <p>so it's gonna seem like an error on creating account. It doesn't redirect and sign in. Idk why; it works locally. I didn't write that impl.</p>
+        <p>so it works, but it's gonna seem like an error on creating account. It doesn't redirect and sign in. It works locally. I didn't write that impl; but I'll fix it later.</p>
         </div>
       </div>
       """
