@@ -55,7 +55,7 @@ defmodule Typer.MixProject do
       {:file_system, "~> 1.0"},
 
       # Add these new dependencies for blog functionality
-      {:nimble_publisher, "~> 1.1"},
+
       {:makeup_elixir, ">= 0.0.0"},
       {:earmark, "~> 1.4"},
       {:makeup_erlang, ">= 0.0.0"}

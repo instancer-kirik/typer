@@ -20,7 +20,14 @@ defmodule TyperWeb.PostLive.FormComponent do
         phx-submit="save"
       >
         <.input field={@form[:title]} type="text" label="Title" />
-        <.input field={@form[:content]} type="text" label="Content" />
+        <.input field={@form[:content]} type="textarea" label="Content" />
+        <.input field={@form[:description]} type="textarea" label="Description" />
+        <.input field={@form[:tags]} type="text" label="Tags (comma-separated)" value={format_tags(@form[:tags].value)} />
+        <datalist id="tag-suggestions">
+          <%= for tag <- @existing_tags do %>
+            <option value={tag} />
+          <% end %>
+        </datalist>
         <.input field={@form[:published_at]} type="date" label="Published at" />
         <:actions>
           <.button phx-disable-with="Saving...">Save Post</.button>
@@ -30,20 +37,32 @@ defmodule TyperWeb.PostLive.FormComponent do
     """
   end
 
+  defp format_tags(tags) when is_list(tags), do: Enum.join(tags, ", ")
+  defp format_tags(tags) when is_binary(tags), do: tags
+  defp format_tags(_), do: ""
+
   @impl true
   def update(%{post: post} = assigns, socket) do
+    changeset = Blog.change_post(post)
+
     {:ok,
      socket
      |> assign(assigns)
-     |> assign_new(:form, fn ->
-       to_form(Blog.change_post(post))
-     end)}
+     |> assign(:changeset, changeset)
+     |> assign(:existing_tags, Blog.list_tags())
+     |> assign_form(changeset)}
   end
 
   @impl true
   def handle_event("validate", %{"post" => post_params}, socket) do
-    changeset = Blog.change_post(socket.assigns.post, post_params)
-    {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
+    IO.inspect(post_params, label: "Received post_params")
+    changeset =
+      socket.assigns.post
+      |> Blog.change_post(post_params)
+      |> Map.put(:action, :validate)
+
+    IO.inspect(changeset, label: "Changeset after validation")
+    {:noreply, assign_form(socket, changeset)}
   end
 
   def handle_event("save", %{"post" => post_params}, socket) do
@@ -61,7 +80,7 @@ defmodule TyperWeb.PostLive.FormComponent do
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset))}
+        {:noreply, assign_form(socket, changeset)}
     end
   end
 
@@ -76,8 +95,12 @@ defmodule TyperWeb.PostLive.FormComponent do
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset))}
+        {:noreply, assign_form(socket, changeset)}
     end
+  end
+
+  defp assign_form(socket, %Ecto.Changeset{} = changeset) do
+    assign(socket, :form, to_form(changeset))
   end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})

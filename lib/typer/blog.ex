@@ -3,35 +3,45 @@ defmodule Typer.Blog do
   alias Typer.Repo
   alias Typer.Blog.Post
 
-  use NimblePublisher,
-    build: Post,
-    from: Application.app_dir(:typer, "priv/posts/**/*.md"),
-    as: :posts,
-    highlighters: [:makeup_elixir, :makeup_erlang]
-
-  @posts Enum.sort_by(@posts, & &1.published_at, {:desc, Date})
-  @tags @posts |> Enum.flat_map(& &1.tags) |> Enum.uniq() |> Enum.sort()
-
-  def all_posts, do: @posts
-  def all_tags, do: @tags
-
-  def get_post_by_slug!(slug) do
-    Enum.find(all_posts(), &(&1.slug == slug)) ||
-    raise Ecto.NoResultsError, queryable: Post
+  def list_posts do
+    Repo.all(from p in Post, order_by: [desc: p.published_at])
   end
 
-  def get_post_by_id!(id) do
-    Enum.find(all_posts(), &(&1.id == id)) ||
-      raise Ecto.NoResultsError, queryable: Post
+  def list_posts_by_tag(tag) do
+    Repo.all(from p in Post,
+      where: ^tag in p.tags,
+      order_by: [desc: p.published_at])
   end
 
-  def get_posts_by_tag!(tag) do
-    case Enum.filter(all_posts(), &(tag in &1.tags)) do
-      [] -> raise Ecto.NoResultsError, queryable: Post
-      posts -> posts
-    end
+  def get_post!(slug) when is_binary(slug) do
+    Repo.get_by!(Post, slug: slug)
   end
 
-  # Keep the existing database-related functions (list_posts, get_post!, create_post, etc.)
-  # ...
+  def get_post!(id) when is_integer(id) do
+    Repo.get!(Post, id)
+  end
+
+  def create_post(attrs \\ %{}) do
+    %Post{}
+    |> Post.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def update_post(%Post{} = post, attrs) do
+    post
+    |> Post.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def delete_post(%Post{} = post) do
+    Repo.delete(post)
+  end
+
+  def change_post(%Post{} = post, attrs \\ %{}) do
+    Post.changeset(post, attrs)
+  end
+
+  def list_tags do
+    Repo.all(from p in Post, select: fragment("DISTINCT unnest(?)", p.tags))
+  end
 end
