@@ -51,7 +51,7 @@ defmodule Typer.Accounts.UserNotifier do
 
     #{url}
 
-    If you didn't request this change, please ignore this.
+    If you didn't request this change, please ignore  this.
 
     ==============================
     """)

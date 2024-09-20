@@ -2,7 +2,7 @@ defmodule TyperWeb.PhraseLive do
   use TyperWeb, :live_view
 
   alias Typer.Game
-#s
+
 
   @impl true
 def render(assigns) do
@@ -69,7 +69,7 @@ def render(assigns) do
   #     preference_value
   #   _ ->
   #     false # Default value if preferences or show_elixir key is not set
-  # end
+  # endr
     updated_socket =
       socket
       |> assign(:current_user, current_user)

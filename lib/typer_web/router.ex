@@ -30,6 +30,16 @@ defmodule TyperWeb.Router do
     post "/add-hash", SessionController, :add_hash
     get "/update-cookies", SessionController, :update_cookies
     get "/toggle_show_elixir", SessionController, :toggle_elixir
+
+    live "/posts", PostLive.Index, :index
+    live "/posts/new", PostLive.Index, :new
+    live "/posts/:id/edit", PostLive.Index, :edit
+
+    live "/posts/:id", PostLive.Show, :show
+    live "/posts/:id/show/edit", PostLive.Show, :edit
+
+    get "/blog", BlogController, :index
+    get "/blog/:slug", BlogController, :show
   end
 
   # Other scopes may use custom stacks.

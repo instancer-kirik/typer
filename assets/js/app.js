@@ -211,6 +211,19 @@ Hooks.EditableContainer = {
       } else if (e.key === 'Enter') {
         e.preventDefault();
         this.handleEnter();
+      }else if (e.key =='Tab'){
+        e.preventDefault();
+        document.getElementById('completion-message').innerHTML =
+        "if (e.key =='Tab'){" + "<br>" +
+        "&nbsp;&nbsp;&nbsp;&nbsp;" + "e.preventDefault();" + "<br>" +
+        "&nbsp;&nbsp;&nbsp;&nbsp;" + "document.getElementById('completion-message').innerText = " +"<br>"+ 
+        "&nbsp;&nbsp;&nbsp;&nbsp;" +"\"if (e.key =='Tab'){" + "<br>" + 
+        "&nbsp;&nbsp;&nbsp;&nbsp;" +"&nbsp;&nbsp;&nbsp;&nbsp;" + "e.preventDefault();" + "<br>" + 
+        "&nbsp;&nbsp;&nbsp;&nbsp;" +"&nbsp;&nbsp;&nbsp;&nbsp;" +"document.getElementById('completion-message').innerText = ..." + "<br>" + 
+        "&nbsp;&nbsp;&nbsp;&nbsp;" + "&nbsp;&nbsp;&nbsp;&nbsp;" +  "this.el.focus();"+ "<br>" +
+        "&nbsp;&nbsp;&nbsp;&nbsp;" +"}\";" + "<br>" +
+        "&nbsp;&nbsp;&nbsp;&nbsp;" +  "this.el.focus();"+ "<br>" +"}";
+        this.el.focus();
       }
       this.updateAndPushUserInput();
     });
@@ -218,6 +231,7 @@ Hooks.EditableContainer = {
     this.el.focus();
     // Calculate initial indentation of the first line and adjust cursor position accordingly
   this.adjustCursorForInitialNewlinesAndIndentation();
+  this.updateRemainingText();//this takes it out of the initial render as block to multiline regular display
   },//mounted
   
   updated() {
@@ -283,33 +297,33 @@ Hooks.EditableContainer = {
       // }
       
     } else {
-      if (isCorrect) {
-        
-        // Handle newline characters and tab characters for indentation
-        if (correctChar === '\n') {
-          this.appendNewLine();
-          // Automatically this.append indentation after new line if next characters are tabs or spaces
-          this.appendIndentation();
-        } else if (correctChar === '\t') {
-          this.appendTab();
-        } else {
-          this.appendChar(char, true);
-        }
+    if (isCorrect) {
+      
+      // Handle newline characters and tab characters for indentation
+      if (correctChar === '\n') {
+        this.appendNewLine();
+        // Automatically this.append indentation after new line if next characters are tabs or spaces
+        //this.appendIndentation();
+      } else if (correctChar === '\t') {
+        this.appendTab();
       } else {
-        if (correctChar === '\n') {
-          this.appendNewLine();
-          // Automatically this.append indentation after new line if next characters are tabs or spaces
-          this.appendIndentation();
-        } else if (correctChar === '\t') {
-          this.appendTab();
-        } else if(char === " ") {
-          char = "▄";
-          this.appendChar(char, false);
-        
-        }else{
-          this.appendChar(char, false);
-        }
+        this.appendChar(char, true);
       }
+    } else {
+      if (correctChar === '\n') {
+        this.appendNewLine();
+        // Automatically this.append indentation after new line if next characters are tabs or spaces
+        this.appendIndentation();
+      } else if (correctChar === '\t') {
+        this.appendTab();
+      } else if(char === " ") {
+        char = "▄";
+        this.appendChar(char, false);
+      
+      }else{
+        this.appendChar(char, false);
+      }
+    }
       this.typedLength++;
       this.moveCaretBeforeRemainingText();
       this.updateRemainingText();
@@ -353,8 +367,26 @@ Hooks.EditableContainer = {
 
     
     const result = line.match(/^(\s*)/);
-    
+    console.log(result);
     return result ? result[1].length : 0;
+  },
+  determineNextLineIndentation() {
+    // Find the start of the current line
+    const currentLineStart = this.phraseText.lastIndexOf('\n', this.typedLength - 1) + 1;
+    // Calculate the end of the current line
+    let currentLineEnd = this.phraseText.indexOf('\n', this.typedLength);
+    if (currentLineEnd === -1) currentLineEnd = this.phraseText.length;
+  
+    // Extract the current line text
+    const currentLineText = this.phraseText.substring(currentLineStart, currentLineEnd);
+  
+    // Use a regex to match leading whitespace characters (spaces or tabs)
+    const leadingWhitespaceMatch = currentLineText.match(/^[\s\t]*/);
+    if (leadingWhitespaceMatch) {
+      return leadingWhitespaceMatch[0].length; // Return the count of leading whitespace characters
+    }
+  
+    return 0; // Default to no indentation if there's no leading whitespace
   },
   appendNewLine(isCorrect) {
      const newLineSpan = document.createElement('br');
@@ -374,11 +406,11 @@ Hooks.EditableContainer = {
   
     // Split the text into segments of words and whitespace/newlines
     const segments = this.phraseText.substring(this.typedLength).split(/(\s+)/);
-    console.log("this.phraseText")
-    console.log(this.phraseText)
+    //console.log("this.phraseText")
+    //console.log(this.phraseText)
     // Process each segment, wrapping words in spans and preserving whitespace
     segments.forEach(segment => {
-      console.log(segment)
+      //console.log(segment)
       if (segment.match(/\s+/)) {
         // For segments that are purely whitespace, replace spaces with &nbsp; but leave newlines as <br>
         html += segment.replace(/\n/g, '<br>');
@@ -433,10 +465,10 @@ inspectTextForCounts(text) {
   const totalCharacters = newlineAdjustedText.length;
 
   // Detailed inspection for debugging
-  console.log(`Total characters (including spaces and line breaks): ${totalCharacters}`);
-  newlineAdjustedText.split('').forEach((char, index) => {
-      console.log(`${index + 1}: '${char}' (${char.charCodeAt(0)})`);
-  });
+  // console.log(`Total characters (including spaces and line breaks): ${totalCharacters}`);
+  // newlineAdjustedText.split('').forEach((char, index) => {
+  //     console.log(`${index + 1}: '${char}' (${char.charCodeAt(0)})`);
+  // });
 
   return totalCharacters;
 },
@@ -499,14 +531,14 @@ adjustCursorForInitialNewlinesAndIndentation() {
   
   this.moveCaretBeforeRemainingText(); // Ensure the caret is correctly positioned after adjustments
 },
-  adjustCursorForInitialIndentation() {
-    const initialIndentation = this.getIndentationLevel(this.phraseText);
-    // Assuming appendChar method can handle space ' ' and correctly position it
-    for (let i = 0; i < initialIndentation; i++) {
-      this.handleCharacterInput(" "); // Pass 'true' to simulate correct input for the sake of positioning
-    }
-    this.moveCaretBeforeRemainingText(); // Ensure the caret is moved after the initial spaces
-  },
+  // adjustCursorForInitialIndentation() {
+  //   const initialIndentation = this.getIndentationLevel(this.phraseText);
+  //   // Assuming appendChar method can handle space ' ' and correctly position it
+  //   for (let i = 0; i < initialIndentation; i++) {
+  //     this.handleCharacterInput(" "); // Pass 'true' to simulate correct input for the sake of positioning
+  //   }
+  //   this.moveCaretBeforeRemainingText(); // Ensure the caret is moved after the initial spaces
+  // },
         rightArrow() {
           // I can just simulate a rightarrow
     
@@ -540,43 +572,55 @@ adjustCursorForInitialNewlinesAndIndentation() {
           }
         },
         handleEnter() {
-          //const currentLine = getCurrentLine(editableContainer.textContent, this.typedLength);
-          const remainingLineText = this.phraseText.substring(this.typedLength).split('\n')[0];
-          const nextLineStartIndex = this.typedLength + remainingLineText.length + 1; // +1 for the newline character itself
-        
-          // Replace remaining text in the current line with a marker (if any)
-          if (remainingLineText.trim().length > 0) {
-            for (let _char of remainingLineText) {
-              this.appendChar('|', false); // Using • as a marker, marking it as incorrect for visual distinction
-              this.typedLength++;
-            }
+          // Identify the end of the current line or use the full text length if no newline character is found.
+          let endOfCurrentLineIndex = this.phraseText.indexOf('\n', this.typedLength);
+          if (endOfCurrentLineIndex === -1) {
+              endOfCurrentLineIndex = this.phraseText.length;
           }
         
-          // Move to the next line
-          this.appendNewLine(true);
-          this.typedLength++; // Account for the newline character
+          // Mark the rest of the current line as incorrect if Enter is pressed before reaching its end.
+          if (this.typedLength < endOfCurrentLineIndex) {
+              this.markRemainingAsIncorrect(this.typedLength, endOfCurrentLineIndex);
+              // Ensure typedLength points to the end of the current line, ready to move to the next line.
+              this.typedLength = endOfCurrentLineIndex;
+          }
         
-          // Handle blank lines by not appending indentation until the next Enter press
-          const nextLineText = this.phraseText.substring(nextLineStartIndex).split('\n')[0];
-          if (nextLineText.trim().length === 0) {
-            // If the next line is blank, simply wait at the end/beginning of the line
-          } else {
-            // For non-blank lines, insert the correct indentation
-            const indentationLevel = this.getIndentationLevel(nextLineText);
-            console.log(indentationLevel);
-            for (let i = 0; i < indentationLevel; i++) {
-              this.appendChar( ' ', true);//nextLineText[i] === '\t' ? '\t' :
-              // appendChar( '&nbsp;', true);
-              // appendChar( '&nbsp;', true);
-              // appendChar( '&nbsp;', true);
+          // Handle moving to the next line: append a visual representation of a newline if needed.
+          if (this.typedLength < this.phraseText.length - 1) {
+              this.appendNewLine();
+          }
+        
+          // Update the cursor position to the start of the next line.
+          this.typedLength++;
+          // Now, let's determine and apply the correct indentation for the new line.
+          const nextLineIndentation = this.determineNextLineIndentation();
+          for (let i = 0; i < nextLineIndentation; i++) {
+              this.appendChar(' ', true); // Assuming space for indentation; adjust if using tabs.
               this.typedLength++;
-              
-            }
-          }///////////////////////////BRB
-        
+          }
+          // Update the UI to reflect the changes.
           this.updateRemainingText();
           this.moveCaretBeforeRemainingText();
         },
+      markAsIncorrect(startIndex, endIndex) {
+        const textContainer = document.getElementById('textContainer');
+        const characterSpans = textContainer.getElementsByTagName('span');
+    
+        // Loop from startIndex to endIndex, marking each character as incorrect
+        for (let i = startIndex; i < endIndex; i++) {
+            if (characterSpans[i]) { // Check if the span exists to avoid errors
+                characterSpans[i].classList.add('incorrect');
+            }
+        }
+    },
+        
+    markRemainingAsIncorrect(startIndex, endIndex) {
+      for (let i = startIndex; i < endIndex; i++) {
+        // Create a visual indicator for incorrect characters.
+        // This example uses '|' as the indicator, but you might use a different approach.
+        this.appendChar('|', false); 
+      }
+    },
         updateAndPushUserInput() {
           if(this.showElixir){
           // Obtain the full text including both the user's input and the remaining text

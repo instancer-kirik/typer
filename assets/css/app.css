@@ -423,3 +423,6 @@ label[data-phx-id] {
   outline: none; /* Removes the default focus outline */
   box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.2); /* Adds a soft blue glow */
 }
+.completion-message{
+  white-space:unset;
+}
