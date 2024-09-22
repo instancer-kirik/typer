@@ -9,6 +9,7 @@ defmodule Typer.Release do
     load_app()
 
     for repo <- repos() do
+      IO.puts("Setting up repo: #{inspect(repo)}")
       ensure_repo_created(repo)
       run_migrations_for(repo)
     end
@@ -28,11 +29,13 @@ defmodule Typer.Release do
   end
 
   defp ensure_repo_created(repo) do
-    IO.puts("Creating repo #{inspect(repo)}")
+    IO.puts("Ensuring repo #{inspect(repo)} is created...")
     case repo.__adapter__.storage_up(repo.config) do
-      :ok -> :ok
-      {:error, :already_up} -> :ok
-      {:error, term} -> raise "The database for #{inspect(repo)} couldn't be created: #{inspect(term)}"
+      :ok -> IO.puts("The database for #{inspect(repo)} has been created")
+      {:error, :already_up} -> IO.puts("The database for #{inspect(repo)} has already been created")
+      {:error, term} ->
+        IO.puts("The database for #{inspect(repo)} couldn't be created: #{inspect(term)}")
+        raise "Error creating the database"
     end
   end
 
@@ -47,6 +50,7 @@ defmodule Typer.Release do
 
   defp load_app do
     Application.load(@app)
+    Application.ensure_all_started(:ssl)
   end
 
   def seed do

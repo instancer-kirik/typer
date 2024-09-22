@@ -115,3 +115,6 @@ if config_env() == :prod do
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 end
+
+# At the end of the file, add:
+config :typer, Typer.Repo, start_apps_before_migration: [:ssl]

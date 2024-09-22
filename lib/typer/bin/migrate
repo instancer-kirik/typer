@@ -1,4 +1,10 @@
 #!/bin/sh
 set -e
 
-/app/bin/typer eval "Typer.Release.setup()"
+echo "Starting migration process..."
+echo "ELIXIR_VERSION: $ELIXIR_VERSION"
+echo "OTP_VERSION: $OTP_VERSION"
+echo "MIX_ENV: $MIX_ENV"
+echo "DATABASE_URL: $DATABASE_URL"
+
+/app/bin/typer eval "IO.puts(\"Running Typer.Release.setup()\"); Typer.Release.setup()"
