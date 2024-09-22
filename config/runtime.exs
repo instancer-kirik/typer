@@ -54,7 +54,7 @@ if config_env() == :prod do
   config :typer, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :typer, TyperWeb.Endpoint,
-    url: [host: host, port: 443, scheme: "https"],
+    url: [host: System.get_env("PHX_HOST") || "instance-typer.fly.dev", port: 443, scheme: "https"],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
@@ -63,7 +63,11 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: port
     ],
-    secret_key_base: secret_key_base
+    secret_key_base: secret_key_base,
+    check_origin: [
+      "https://instance.select",
+      "https://instance-typer.fly.dev"
+    ]
 
   # ## SSL Support
   #
@@ -117,4 +121,6 @@ if config_env() == :prod do
 end
 
 # At the end of the file, add:
+config :typer, Typer.Repo, start_apps_before_migration: [:ssl]
+
 config :typer, Typer.Repo, start_apps_before_migration: [:ssl]
