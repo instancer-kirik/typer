@@ -70,8 +70,12 @@ defmodule TyperWeb.UserRegistrationLive do
             &url(~p"/users/confirm/#{&1}")
           )
 
-        changeset = Accounts.change_user_registration(user)
-        {:noreply, socket |> assign(trigger_submit: true) |> assign_form(changeset)}
+        socket =
+          socket
+          |> assign(trigger_submit: true)
+          |> assign(form: to_form(Accounts.change_user_registration(%User{})))
+
+        {:noreply, socket}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, socket |> assign(check_errors: true) |> assign_form(changeset)}
