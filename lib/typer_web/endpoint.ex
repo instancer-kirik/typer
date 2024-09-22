@@ -14,10 +14,7 @@ defmodule TyperWeb.Endpoint do
   socket "/live", Phoenix.LiveView.Socket,
     websocket: [
       connect_info: [session: @session_options],
-      check_origin: [
-        "https://instance.select",
-        "https://instance-typer.fly.dev"
-      ]
+      check_origin: false
     ]
 
   # Serve at "/" the static files from "priv/static" directory.

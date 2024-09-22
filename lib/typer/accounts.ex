@@ -118,7 +118,8 @@ defmodule Typer.Accounts do
     is_admin = Enum.member?(admin_emails, attrs["email"])
 
     %User{}
-    |> User.changeset(Map.put(attrs, "is_admin", is_admin))
+    |> User.registration_changeset(attrs)
+    |> Ecto.Changeset.put_change(:is_admin, is_admin)
     |> Repo.insert()
   end
 

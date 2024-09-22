@@ -52,11 +52,11 @@ defmodule TyperWeb.UserRegistrationLive do
 
   def mount(_params, _session, socket) do
     changeset = Accounts.change_user_registration(%User{})
+    form = to_form(changeset, as: "user")
 
     socket =
       socket
-      |> assign(trigger_submit: false, check_errors: false)
-      |> assign_form(changeset)
+      |> assign(trigger_submit: false, check_errors: false, form: form)
 
     {:ok, socket, temporary_assigns: [form: nil]}
   end
@@ -79,7 +79,9 @@ defmodule TyperWeb.UserRegistrationLive do
   end
 
   def handle_event("validate", %{"user" => user_params}, socket) do
+    IO.inspect(user_params, label: "User params")
     changeset = Accounts.change_user_registration(%User{}, user_params)
+    IO.inspect(changeset, label: "Changeset")
     {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
   end
 

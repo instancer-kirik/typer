@@ -66,7 +66,8 @@ if config_env() == :prod do
     secret_key_base: secret_key_base,
     check_origin: [
       "https://instance.select",
-      "https://instance-typer.fly.dev"
+      "https://instance-typer.fly.dev",
+      "localhost:4000"
     ]
 
   # ## SSL Support
