@@ -4,7 +4,8 @@ defmodule Typer.Accounts.User do
 
   schema "users" do
     field :email, :string
-    field :username, :string  # Add this line
+    field :username, :string
+    field :is_admin, :boolean, default: false
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
@@ -14,7 +15,7 @@ defmodule Typer.Accounts.User do
 @doc false
 def changeset(user, attrs) do
   user
-  |> cast(attrs, [:email, :username, :preferences])
+  |> cast(attrs, [:email, :username, :is_admin, :preferences])
   |> validate_required([:email, :username])
   |> validate_email([])
   |> validate_username()
@@ -44,7 +45,7 @@ end
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password, :username])  # Add :username here
+    |> cast(attrs, [:email, :password])  # Add :username here
     |> validate_email(opts)
     |> validate_password(opts)
     |> validate_username()  # Add this line

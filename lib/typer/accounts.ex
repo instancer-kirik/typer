@@ -114,8 +114,11 @@ defmodule Typer.Accounts do
 
   """
   def register_user(attrs) do
+    admin_emails = Application.get_env(:typer, :admin_emails, [])
+    is_admin = Enum.member?(admin_emails, attrs["email"])
+
     %User{}
-    |> User.registration_changeset(attrs)
+    |> User.changeset(Map.put(attrs, "is_admin", is_admin))
     |> Repo.insert()
   end
 

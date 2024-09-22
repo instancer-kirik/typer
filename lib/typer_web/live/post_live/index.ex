@@ -6,7 +6,7 @@ defmodule TyperWeb.PostLive.Index do
 
   @impl true
   def mount(_params, session, socket) do
-    current_user = Typer.Accounts.get_user_by_session_token(session["user_token"])
+    current_user = get_current_user(session)
     IO.puts("Initial sort direction: desc")
     {:ok,
      socket
@@ -14,6 +14,7 @@ defmodule TyperWeb.PostLive.Index do
      |> assign(:existing_tags, Blog.list_tags())
      |> assign(:current_tag, nil)
      |> assign(:current_user, current_user)
+     |> assign(:can_create_post, can_create_post?(current_user))
      |> assign(:sort_direction, :desc)}
   end
 
@@ -124,5 +125,18 @@ defmodule TyperWeb.PostLive.Index do
   defp fetch_posts(tag, sort_direction) do
     Blog.list_posts_by_tag(tag, sort_direction)
   end
+
+  defp get_current_user(session) do
+    with user_token when not is_nil(user_token) <- session["user_token"],
+         user when not is_nil(user) <- Typer.Accounts.get_user_by_session_token(user_token) do
+      user
+    else
+      _ -> nil
+    end
+  end
+
+  defp can_create_post?(nil), do: false
+  defp can_create_post?(%{is_admin: true}), do: true
+  defp can_create_post?(_), do: false
 
 end

@@ -11,8 +11,17 @@ defmodule TyperWeb.PostLive.Show do
 
   @impl true
   def mount(_params, session, socket) do
-    current_user = Accounts.get_user_by_session_token(session["user_token"])
+    current_user = get_current_user(session)
     {:ok, assign(socket, current_user: current_user, show_sidebar: true)}
+  end
+
+  defp get_current_user(session) do
+    with user_token when not is_nil(user_token) <- session["user_token"],
+         user when not is_nil(user) <- Accounts.get_user_by_session_token(user_token) do
+      user
+    else
+      _ -> nil
+    end
   end
 
   @impl true
@@ -52,30 +61,26 @@ defmodule TyperWeb.PostLive.Show do
 
   @impl true
   def handle_event("save_comment", %{"comment" => comment_params}, socket) do
-    case socket.assigns.current_user do
-      nil ->
-        {:noreply, put_flash(socket, :error, "You must be logged in to comment.")}
+    case create_comment(socket.assigns.post, socket.assigns.current_user, comment_params) do
+      {:ok, _comment} ->
+        updated_comments = Blog.list_comments_for_post(socket.assigns.post)
+        {:noreply,
+         socket
+         |> put_flash(:info, "Comment added successfully")
+         |> assign(:comments, updated_comments)
+         |> assign(:comment_form, to_form(Blog.change_comment(%Comment{})))}
 
-      user ->
-        case Blog.create_comment(socket.assigns.post, user, comment_params) do
-          {:ok, _comment} ->
-            {:noreply,
-             socket
-             |> put_flash(:info, "Comment added successfully")
-             |> assign(:comments, Blog.list_comments_for_post(socket.assigns.post))
-             |> assign(:comment_form, to_form(Blog.change_comment(%Comment{})))}
-
-          {:error, %Ecto.Changeset{} = changeset} ->
-            {:noreply, assign(socket, :comment_form, to_form(changeset))}
-        end
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, :comment_form, to_form(changeset))}
     end
   end
 
-  defp create_comment(post, current_user, comment_params) do
-    case current_user do
-      nil -> Blog.create_anonymous_comment(post, comment_params)
-      user -> Blog.create_comment(post, user, comment_params)
-    end
+  defp create_comment(_post, nil, _comment_params) do
+    {:error, :not_authenticated}
+  end
+
+  defp create_comment(post, user, comment_params) do
+    Blog.create_comment(post, user, comment_params)
   end
 
   @impl true
@@ -84,8 +89,7 @@ defmodule TyperWeb.PostLive.Show do
     {:noreply, socket}
   end
 
-  defp comment_author(%{user: %{email: email}}), do: email
-  defp comment_author(%{author: author}) when not is_nil(author), do: author
+  defp comment_author(%{user: %{username: username}}), do: username
   defp comment_author(_), do: "Anonymous"
 
   @impl true

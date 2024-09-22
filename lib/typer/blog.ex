@@ -61,15 +61,14 @@ defmodule Typer.Blog do
     Repo.all(from c in Comment,
       where: c.post_slug == ^post_slug,
       order_by: [desc: c.inserted_at],
-      preload: [user: [:username]]
+      preload: [:user]  # Change this line
     )
   end
 
   def create_comment(%Post{} = post, %User{} = user, attrs \\ %{}) do
-    post
-    |> Ecto.build_assoc(:comments)
+    attrs = Map.merge(attrs, %{"post_slug" => post.slug, "user_id" => user.id})
+    %Comment{}
     |> Comment.changeset(attrs)
-    |> Ecto.Changeset.put_assoc(:user, user)
     |> Repo.insert()
   end
 

@@ -20,6 +20,7 @@ defmodule TyperWeb.PostLive.FormComponent do
         phx-change="validate"
         phx-submit="save"
         class="space-y-6 bg-gray-900 p-6 rounded-lg shadow-md text-gray-200"
+
       >
         <div class="space-y-4">
           <.input field={@form[:title]} type="text" label="Title" phx-debounce="blur" class="bg-gray-800 text-gray-200 border-gray-700" />

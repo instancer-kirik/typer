@@ -1,9 +1,11 @@
 <.header>
   Listing Posts
   <:actions>
-    <.link patch={~p"/posts/new"}>
-      <.button>New Post</.button>
-    </.link>
+    <%= if @can_create_post do %>
+     <.link patch={~p"/posts/new"}>
+       <.button>New Post</.button>
+      </.link>
+    <% end %>
   </:actions>
 </.header>
 
