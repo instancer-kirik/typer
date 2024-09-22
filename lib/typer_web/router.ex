@@ -36,7 +36,7 @@ defmodule TyperWeb.Router do
     live "/posts/tag/:tag", PostLive.Index, :index
     live "/posts/:slug", PostLive.Show, :show
     live "/posts/:slug/edit", PostLive.Show, :edit
-
+    get "/posts/:slug/images/:filename", ImageController, :show
   end
 
 

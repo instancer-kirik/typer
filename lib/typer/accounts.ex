@@ -8,9 +8,15 @@ defmodule Typer.Accounts do
 
   alias Typer.Accounts.{User, UserToken, UserNotifier}
 
+  def update_user_preferences(%User{} = user, attrs) do
+    user
+    |> User.preferences_changeset(attrs)
+    |> Repo.update()
+  end
 
-
-
+  def get_user_vault_path(user) do
+    user.preferences["vault_path"]
+  end
   def toggle_show_elixir(%Typer.Accounts.User{preferences: preferences} = user) when is_map(preferences) do
     new_preferences =
       preferences
@@ -382,5 +388,16 @@ defmodule Typer.Accounts do
       {:ok, %{user: user}} -> {:ok, user}
       {:error, :user, changeset, _} -> {:error, changeset}
     end
+  end
+
+  def update_user_username(user, password, attrs) do
+    user
+    |> User.username_changeset(attrs)
+    |> User.validate_current_password(password)
+    |> Repo.update()
+  end
+
+  def change_user_username(user, attrs \\ %{}) do
+    User.username_changeset(user, attrs)
   end
 end

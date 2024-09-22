@@ -426,3 +426,283 @@ label[data-phx-id] {
 .completion-message{
   white-space:unset;
 }
+
+/* Add these styles at the end of your app.css file */
+
+/* Ensure dark background for the main form container */
+.bg-gray-900 {
+  background-color: #111827 !important;
+}
+
+/* Style for form inputs */
+.bg-gray-800 {
+  background-color: #1f2937 !important;
+}
+
+/* Text color for inputs and labels */
+.text-gray-200,
+.text-gray-300,
+.text-gray-400 {
+  color: #e5e7eb !important;
+}
+
+/* Border color for inputs */
+.border-gray-700 {
+  border-color: #374151 !important;
+}
+
+/* Style for buttons */
+.bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+.hover\:bg-blue-700:hover {
+  background-color: #1d4ed8 !important;
+}
+
+/* Ensure text inputs and textareas have correct styling */
+input[type="text"],
+input[type="date"],
+textarea {
+  background-color: #1f2937 !important;
+  color: #e5e7eb !important;
+  border-color: #374151 !important;
+}
+
+/* Style for labels */
+label {
+  color: #e5e7eb !important;
+}
+
+/* Override any conflicting styles for the form container */
+#post-form {
+  background-color: #111827 !important;
+  color: #e5e7eb !important;
+}
+/* Form modal specific styles */
+.modal, 
+.modal-content,
+.phx-modal-content {
+  background-color: #1a1a1a !important;
+  color: #e0e0e0 !important;
+}
+
+/* Style all inputs and textareas within the modal */
+.modal input,
+.modal textarea,
+.phx-modal-content input,
+.phx-modal-content textarea {
+  background-color: #2a2a2a !important;
+  color: #e0e0e0 !important;
+  border-color: #3a3a3a !important;
+}
+
+/* Style buttons within the modal */
+.modal button,
+.phx-modal-content button {
+  background-color: #3a3a3a !important;
+  color: #e0e0e0 !important;
+}
+
+.modal button:hover,
+.phx-modal-content button:hover {
+  background-color: #4a4a4a !important;
+}
+
+/* Index items hover effect */
+.stream-item:hover,
+.stream-item:focus,
+.stream-item:focus-within {
+  background-color: #2a2a2a !important;
+  color: #8f6262 !important;
+}
+
+/* Ensure text color for all elements in the modal and index */
+.modal *, .phx-modal-content *, .stream-item * {
+  color: #a07d7d !important;
+}
+
+/* Links within the modal and index */
+.modal a, .phx-modal-content a, .stream-item a {
+  color: #4a90e2 !important;
+}
+
+.modal a:hover, .phx-modal-content a:hover, .stream-item a:hover {
+  color: #5aa0f2 !important;
+}
+/* Main post background */
+.bg-white {
+  background-color: #1a1a1a !important;
+  color: #a4a2a2 !important;
+}
+
+/* Form modal specific styles */
+.modal, 
+.modal-content,
+.phx-modal-content,
+#post-form {
+  background-color: #1a1a1a !important;
+  color: #9e9e9e !important;
+}
+
+/* Style all inputs and textareas within the modal and main content */
+.modal input,
+.modal textarea,
+.phx-modal-content input,
+.phx-modal-content textarea,
+.bg-white input,
+.bg-white textarea {
+  background-color: #2a2a2a !important;
+  color: #979797 !important;
+  border-color: #3a3a3a !important;
+}
+
+/* Style buttons within the modal and main content */
+.modal button,
+.phx-modal-content button,
+.bg-white button {
+  background-color: #3a3a3a !important;
+  color: #8e8484 !important;
+}
+
+.modal button:hover,
+.phx-modal-content button:hover,
+.bg-white button:hover {
+  background-color: #4a4a4a !important;
+}
+
+/* Ensure text color for all elements in the modal and main content */
+.modal *, .phx-modal-content *, .bg-white * {
+  color: #9b9b9b !important;
+}
+
+/* Links within the modal and main content */
+.modal a, .phx-modal-content a, .bg-white a {
+  color: #4a90e2 !important;
+}
+
+.modal a:hover, .phx-modal-content a:hover, .bg-white a:hover {
+  color: #5aa0f2 !important;
+}
+
+/* Override any conflicting Tailwind classes */
+.bg-gray-100, .bg-gray-200, .bg-gray-300 {
+  background-color: #1a1a1a !important;
+}
+
+.text-gray-600, .text-gray-700, .text-gray-800, .text-gray-900 {
+  color: #ffa1a1 !important;
+}/* Target table rows in the posts list */
+
+/* Aggressive styling for table rows */
+#posts tr,
+#posts tr td,
+#posts tr th {
+  background-color: #1a1a1a !important;
+  color: #e57272 !important;
+  transition: background-color 0.3s ease, color 0.3s ease !important;
+}
+
+/* Aggressive hover effect for table rows */
+#posts tr:hover,
+#posts tr:hover td,
+#posts tr:hover th {
+  background-color: #2a2a2a !important;
+  color: #968989 !important;
+}
+
+/* Ensure text color for all elements in the table rows */
+#posts tr *,
+#posts tr:hover * {
+  color: inherit !important;
+}
+
+/* Links within the table rows */
+#posts tr a {
+  color: #707f90 !important;
+}
+
+#posts tr a:hover {
+  color: #8f9eaf !important;
+}
+
+/* Override any conflicting Tailwind classes */
+.hover\:bg-gray-50:hover,
+.hover\:bg-gray-100:hover,
+.hover\:bg-gray-200:hover,
+.even\:bg-gray-50:nth-child(even),
+.odd\:bg-gray-50:nth-child(odd) {
+  background-color: transparent !important;
+}
+
+/* Ensure these styles are not overridden */
+#posts tr,
+#posts tr td,
+#posts tr th,
+#posts tr:hover,
+#posts tr:hover td,
+#posts tr:hover th {
+  background-color: #1a1a1a !important;
+}
+
+#posts tr:hover,
+#posts tr:hover td,
+#posts tr:hover th {
+  background-color: #2a2a2a !important;
+}/* Target the specific table */
+.dark-mode-table tr,
+.dark-mode-table tr td,
+.dark-mode-table tr th {
+  background-color: #1a1a1a !important;
+  color: #e57272 !important;
+}
+
+.dark-mode-table tr:hover,
+.dark-mode-table tr:hover td,
+.dark-mode-table tr:hover th {
+  background-color: #2a2a2a !important;
+  color: #968989 !important;
+}
+/* Remove rounded borders and adjust positioning */
+#posts tr .absolute {
+  border-radius: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+/* Adjust hover effect */
+#posts tr:hover .absolute.group-hover\:bg-zinc-50 {
+  background-color: #edc3c3 !important;
+  opacity: 1 !important;
+  z-index: 0 !important;
+}
+
+/* Ensure text and other elements are above the hover background */
+#posts tr:hover td,
+#posts tr:hover th,
+#posts tr:hover a {
+  position: relative !important;
+  z-index: 1 !important;
+  color: #968989 !important;
+}
+
+/* Adjust link colors */
+#posts tr:hover a {
+  color: #9a2727d9 !important;
+}
+
+#posts tr:hover a:hover {
+  color: #642323 !important;
+}
+
+/* Remove any existing borders that might be causing issues */
+#posts tr,
+#posts td,
+#posts th {
+  border: none !important;
+}
+
+/* Add a subtle separator between rows if needed */
+#posts tr:not(:last-child) td {
+  border-bottom: 1px solid #2a2a2a !important;
+}

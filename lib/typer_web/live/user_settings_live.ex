@@ -7,7 +7,7 @@ defmodule TyperWeb.UserSettingsLive do
     ~H"""
     <.header class="text-center">
       Account Settings
-      <:subtitle>Manage your account email address and password settings</:subtitle>
+      <:subtitle>Manage your account email address, password, and preferences</:subtitle>
     </.header>
 
     <div class="space-y-12 divide-y">
@@ -69,6 +69,40 @@ defmodule TyperWeb.UserSettingsLive do
           </:actions>
         </.simple_form>
       </div>
+      <div>
+        <.simple_form
+          for={@preferences_form}
+          id="preferences_form"
+          phx-submit="update_preferences"
+        >
+          <.input field={@preferences_form[:vault_path]} type="text" label="Vault Path" />
+          <:actions>
+            <.button phx-disable-with="Saving...">Update Preferences</.button>
+          </:actions>
+        </.simple_form>
+      </div>
+      <div>
+        <.simple_form
+          for={@username_form}
+          id="username_form"
+          phx-submit="update_username"
+          phx-change="validate_username"
+        >
+          <.input field={@username_form[:username]} type="text" label="Username" required />
+          <.input
+            field={@username_form[:current_password]}
+            name="current_password"
+            id="current_password_for_username"
+            type="password"
+            label="Current password"
+            value={@username_form_current_password}
+            required
+          />
+          <:actions>
+            <.button phx-disable-with="Changing...">Change Username</.button>
+          </:actions>
+        </.simple_form>
+      </div>
     </div>
     """
   end
@@ -90,6 +124,7 @@ defmodule TyperWeb.UserSettingsLive do
     user = socket.assigns.current_user
     email_changeset = Accounts.change_user_email(user)
     password_changeset = Accounts.change_user_password(user)
+    preferences_changeset = Accounts.change_user_preferences(user)
 
     socket =
       socket
@@ -98,6 +133,7 @@ defmodule TyperWeb.UserSettingsLive do
       |> assign(:current_email, user.email)
       |> assign(:email_form, to_form(email_changeset))
       |> assign(:password_form, to_form(password_changeset))
+      |> assign(:preferences_form, to_form(preferences_changeset))
       |> assign(:trigger_submit, false)
 
     {:ok, socket}
@@ -162,6 +198,36 @@ defmodule TyperWeb.UserSettingsLive do
 
       {:error, changeset} ->
         {:noreply, assign(socket, password_form: to_form(changeset))}
+    end
+  end
+
+  def handle_event("update_preferences", %{"user" => user_params}, socket) do
+    case Accounts.update_user_preferences(socket.assigns.current_user, user_params) do
+      {:ok, user} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Preferences updated successfully")
+         |> assign(:preferences_form, to_form(Accounts.change_user_preferences(user)))}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :preferences_form, to_form(changeset))}
+    end
+  end
+
+  def handle_event("update_username", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+    user = socket.assigns.current_user
+
+    case Accounts.update_user_username(user, password, user_params) do
+      {:ok, user} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Username updated successfully.")
+         |> assign(:current_user, user)
+         |> assign(:username_form, to_form(Accounts.change_user_username(user)))}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :username_form, to_form(Map.put(changeset, :action, :insert)))}
     end
   end
 end

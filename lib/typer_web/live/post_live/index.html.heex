@@ -7,13 +7,37 @@
   </:actions>
 </.header>
 
+<div class="mb-4">
+  <label for="tag-filter" class="block text-sm font-medium text-gray-700">Filter by Tag:</label>
+  <form phx-change="filter_by_tag">
+    <select id="tag-filter" name="tag" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-700  bg-gray-700 text-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+      <option value="">All Tags</option>
+      <%= for tag <- @existing_tags do %>
+        <option value={tag} selected={@current_tag == tag}><%= tag %></option>
+      <% end %>
+    </select>
+  </form>
+</div>
+
+<div class="mb-4">
+  <label for="sort-direction" class="block text-sm font-medium text-gray-700 ">Sort by Date:</label>
+  <form phx-change="sort">
+    <select id="sort-direction" name="sort" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-700  bg-gray-700 text-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+      <option value="desc" selected={@sort_direction == :desc}>Newest First</option>
+      <option value="asc" selected={@sort_direction == :asc}>Oldest First</option>
+    </select>
+  </form>
+</div>
+
 <.table
   id="posts"
   rows={@streams.posts}
   row_click={fn {_id, post} -> JS.navigate(~p"/posts/#{post}") end}
+  class="dark-mode-table"
 >
   <:col :let={{_id, post}} label="Title"><%= post.title %></:col>
   <:col :let={{_id, post}} label="Published at"><%= post.published_at %></:col>
+  <:col :let={{_id, post}} label="Tags"><%= Enum.join(post.tags, ", ") %></:col>
   <:action :let={{_id, post}}>
     <div class="sr-only">
       <.link navigate={~p"/posts/#{post}"}>Show</.link>
@@ -39,6 +63,8 @@
       action={@live_action}
       post={@post}
       patch={~p"/posts"}
+      current_user={@current_user}
+      existing_tags={@existing_tags}
     />
   </.modal>
 <% end %>

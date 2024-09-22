@@ -21,8 +21,11 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
+import { pickFile } from "./file_picker";
+import ResizeContent from "./hooks/resize_content"
+
 //import "htmx.org";
-let Hooks = {};
+let Hooks = { ResizeContent: ResizeContent};
 
 
 Hooks.DarkModeToggle = {
@@ -103,6 +106,32 @@ Hooks.ForceReload = {
     });
   }
 };
+
+Hooks.FilePicker = {// this is for the md file picker in the post live
+  mounted() {
+    console.log("FilePicker hook mounted");
+    this.el.addEventListener("click", () => {
+      console.log("FilePicker clicked");
+      let input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.md';
+      input.onchange = (e) => {
+        console.log("File selected");
+        let file = e.target.files[0];
+        let reader = new FileReader();
+        reader.onload = (e) => {
+          console.log("File read, pushing event");
+          this.pushEvent("file-selected", {
+            filename: file.name,
+            contents: e.target.result
+          });
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    });
+  }
+}
 Hooks.HashCalculator = {
   mounted() {
     console.log("HashCalculator mounted. Initializing hash calculation script.");
@@ -167,6 +196,9 @@ Hooks.Countdown = {
 Hooks.EditableContainer = {
   
   mounted() {
+    this.el.addEventListener('input', (e) => {
+      this.pushEventTo(this.el, "process_input", { value: e.target.innerText });
+    });
      // Initialize timer-related properties
      this.timerStarted = false;
      this.elapsedTime = 0;

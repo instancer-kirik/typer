@@ -1,6 +1,9 @@
 defmodule Typer.Blog.Post do
   use Ecto.Schema
   import Ecto.Changeset
+  alias Typer.Accounts.User
+  alias Typer.Blog.Comment
+  alias Typer.Game.Phrase
 
   @primary_key {:slug, :string, autogenerate: false}
   @derive {Phoenix.Param, key: :slug}
@@ -10,6 +13,11 @@ defmodule Typer.Blog.Post do
     field :description, :string
     field :tags, {:array, :string}
     field :published_at, :date
+    field :images, :map
+
+    belongs_to :user, User
+    has_many :comments, Comment, foreign_key: :post_slug
+    has_one :phrase, Phrase
 
     timestamps(type: :utc_datetime)
   end
@@ -17,11 +25,13 @@ defmodule Typer.Blog.Post do
   @doc false
   def changeset(post, attrs) do
     post
-    |> cast(attrs, [:title, :content, :description, :published_at])
-    |> validate_required([:title, :content, :published_at])
+    |> cast(attrs, [:title, :content, :description, :published_at, :images])#don't cast tags
+    |> validate_required([:title, :content])
     |> maybe_generate_slug()
     |> unique_constraint(:slug)
     |> process_tags(attrs)
+    |> process_images(attrs)
+    |> put_change(:published_at, attrs[:published_at] || Date.utc_today())  # Add this line
   end
 
   defp maybe_generate_slug(changeset) do
@@ -61,5 +71,15 @@ defmodule Typer.Blog.Post do
     |> String.split(",", trim: true)
     |> Enum.map(&String.trim/1)
     |> Enum.reject(&(&1 == ""))
+  end
+
+  defp process_images(changeset, attrs) do
+    case Map.get(attrs, "images") || Map.get(attrs, :images) do
+      nil -> changeset
+      images when is_map(images) ->
+        put_change(changeset, :images, images)
+      _ ->
+        add_error(changeset, :images, "must be a map of image data")
+    end
   end
 end

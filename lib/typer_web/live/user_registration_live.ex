@@ -35,6 +35,7 @@ defmodule TyperWeb.UserRegistrationLive do
 
           <.input field={@form[:email]} type="email" label="Email" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 bg-grey"/>
           <.input field={@form[:password]} type="password" label="Password" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 bg-grey"/>
+          <.input field={@form[:username]} type="text" label="Username" required />
 
           <:actions>
             <.button phx-disable-with="Creating account..." class="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">Create an account</.button>

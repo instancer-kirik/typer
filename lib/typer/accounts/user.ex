@@ -4,6 +4,7 @@ defmodule Typer.Accounts.User do
 
   schema "users" do
     field :email, :string
+    field :username, :string  # Add this line
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
@@ -13,9 +14,10 @@ defmodule Typer.Accounts.User do
 @doc false
 def changeset(user, attrs) do
   user
-  |> cast(attrs, [:email, :preferences]) # Include :preferences in the list of fields that can be changed
-  |> validate_required([:email]) # Add other validations as necessary
-  # other changeset operations...
+  |> cast(attrs, [:email, :username, :preferences])
+  |> validate_required([:email, :username])
+  |> validate_email([])
+  |> validate_username()
 end
   @doc """
   A user changeset for registration.
@@ -42,9 +44,10 @@ end
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password])
+    |> cast(attrs, [:email, :password, :username])  # Add :username here
     |> validate_email(opts)
     |> validate_password(opts)
+    |> validate_username()  # Add this line
   end
 
   defp validate_email(changeset, opts) do
@@ -158,5 +161,45 @@ end
     else
       add_error(changeset, :current_password, "is not valid")
     end
+  end
+
+  def preferences_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:preferences])
+    |> validate_preferences()
+  end
+
+  defp validate_preferences(changeset) do
+    changeset
+    |> validate_change(:preferences, fn :preferences, preferences ->
+      case validate_vault_path(preferences["vault_path"]) do
+        :ok -> []
+        {:error, message} -> [preferences: message]
+      end
+    end)
+  end
+
+  defp validate_vault_path(nil), do: :ok
+  defp validate_vault_path(path) when is_binary(path) do
+    if File.dir?(path) do
+      :ok
+    else
+      {:error, "Vault path does not exist or is not a directory"}
+    end
+  end
+  defp validate_vault_path(_), do: {:error, "Invalid vault path"}
+
+  def username_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:username])
+    |> validate_username()
+  end
+
+  defp validate_username(changeset) do
+    changeset
+    |> validate_required([:username])
+    |> validate_length(:username, min: 3, max: 30)
+    |> validate_format(:username, ~r/^[a-zA-Z0-9_.-]+$/, message: "can only contain letters, numbers, and _.-")
+    |> unique_constraint(:username)
   end
 end
