@@ -20,6 +20,9 @@ defmodule Typer.Game do
     Repo.get!(Phrase, id)
     |> Repo.preload(:post)
   end
+  def get_phrase(id) do
+    Repo.get(Phrase, id)
+  end
 
   def delete_phrase(id) do
     phrase = Repo.get!(Phrase, id)

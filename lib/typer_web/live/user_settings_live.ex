@@ -25,7 +25,7 @@ defmodule TyperWeb.UserSettingsLive do
             id="current_password_for_email"
             type="password"
             label="Current password"
-            value={@email_form_current_password}
+            value={@email_form[:current_password].value}
             required
           />
           <:actions>
@@ -61,23 +61,11 @@ defmodule TyperWeb.UserSettingsLive do
             type="password"
             label="Current password"
             id="current_password_for_password"
-            value={@current_password}
+            value={@password_form[:current_password].value}
             required
           />
           <:actions>
             <.button phx-disable-with="Changing...">Change Password</.button>
-          </:actions>
-        </.simple_form>
-      </div>
-      <div>
-        <.simple_form
-          for={@preferences_form}
-          id="preferences_form"
-          phx-submit="update_preferences"
-        >
-          <.input field={@preferences_form[:vault_path]} type="text" label="Vault Path" />
-          <:actions>
-            <.button phx-disable-with="Saving...">Update Preferences</.button>
           </:actions>
         </.simple_form>
       </div>
@@ -95,7 +83,7 @@ defmodule TyperWeb.UserSettingsLive do
             id="current_password_for_username"
             type="password"
             label="Current password"
-            value={@username_form_current_password}
+            value={@username_form[:current_password].value}
             required
           />
           <:actions>
@@ -112,7 +100,6 @@ defmodule TyperWeb.UserSettingsLive do
       case Accounts.update_user_email(socket.assigns.current_user, token) do
         :ok ->
           put_flash(socket, :info, "Email changed successfully.")
-
         :error ->
           put_flash(socket, :error, "Email change link is invalid or it has expired.")
       end
@@ -122,40 +109,35 @@ defmodule TyperWeb.UserSettingsLive do
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
-    email_changeset = Accounts.change_user_email(user)
-    password_changeset = Accounts.change_user_password(user)
-    preferences_changeset = Accounts.change_user_preferences(user)
 
     socket =
       socket
-      |> assign(:current_password, nil)
-      |> assign(:email_form_current_password, nil)
-      |> assign(:current_email, user.email)
-      |> assign(:email_form, to_form(email_changeset))
-      |> assign(:password_form, to_form(password_changeset))
-      |> assign(:preferences_form, to_form(preferences_changeset))
+      |> assign(:page_title, "Account Settings")
+      |> assign(:email_form, to_form(Accounts.change_user_email(user, %{current_password: ""})))
+      |> assign(:password_form, to_form(Accounts.change_user_password(user, %{current_password: ""})))
+      |> assign(:username_form, to_form(Accounts.change_user_username(user, %{current_password: ""})))
       |> assign(:trigger_submit, false)
+      |> assign(:current_email, user.email)
 
     {:ok, socket}
   end
 
-  def handle_event("validate_email", params, socket) do
-    %{"current_password" => password, "user" => user_params} = params
-
-    email_form =
-      socket.assigns.current_user
-      |> Accounts.change_user_email(user_params)
+  def handle_event("validate_" <> field, %{"user" => params}, socket) do
+    changeset =
+      case field do
+        "email" -> Accounts.change_user_email(socket.assigns.current_user, params)
+        "password" -> Accounts.change_user_password(socket.assigns.current_user, params)
+        "username" -> Accounts.change_user_username(socket.assigns.current_user, params)
+      end
       |> Map.put(:action, :validate)
-      |> to_form()
 
-    {:noreply, assign(socket, email_form: email_form, email_form_current_password: password)}
+    {:noreply, assign(socket, :"#{field}_form", to_form(changeset))}
   end
 
-  def handle_event("update_email", params, socket) do
-    %{"current_password" => password, "user" => user_params} = params
+  def handle_event("update_email", %{"user" => user_params}, socket) do
     user = socket.assigns.current_user
 
-    case Accounts.apply_user_email(user, password, user_params) do
+    case Accounts.apply_user_email(user, user_params["current_password"], user_params) do
       {:ok, applied_user} ->
         Accounts.deliver_user_update_email_instructions(
           applied_user,
@@ -164,27 +146,14 @@ defmodule TyperWeb.UserSettingsLive do
         )
 
         info = "A link to confirm your email change has been sent to the new address."
-        {:noreply, socket |> put_flash(:info, info) |> assign(email_form_current_password: nil)}
+        {:noreply, socket |> put_flash(:info, info) |> assign(email_form: to_form(Accounts.change_user_email(user, %{current_password: ""})))}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :email_form, to_form(Map.put(changeset, :action, :insert)))}
     end
   end
 
-  def handle_event("validate_password", params, socket) do
-    %{"current_password" => password, "user" => user_params} = params
-
-    password_form =
-      socket.assigns.current_user
-      |> Accounts.change_user_password(user_params)
-      |> Map.put(:action, :validate)
-      |> to_form()
-
-    {:noreply, assign(socket, password_form: password_form, current_password: password)}
-  end
-
-  def handle_event("update_password", params, socket) do
-    %{"current_password" => password, "user" => user_params} = params
+  def handle_event("update_password", %{"current_password" => password, "user" => user_params}, socket) do
     user = socket.assigns.current_user
 
     case Accounts.update_user_password(user, password, user_params) do
@@ -201,33 +170,20 @@ defmodule TyperWeb.UserSettingsLive do
     end
   end
 
-  def handle_event("update_preferences", %{"user" => user_params}, socket) do
-    case Accounts.update_user_preferences(socket.assigns.current_user, user_params) do
-      {:ok, user} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Preferences updated successfully")
-         |> assign(:preferences_form, to_form(Accounts.change_user_preferences(user)))}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :preferences_form, to_form(changeset))}
-    end
-  end
-
-  def handle_event("update_username", params, socket) do
-    %{"current_password" => password, "user" => user_params} = params
+  def handle_event("update_username", %{"current_password" => password, "user" => user_params}, socket) do
     user = socket.assigns.current_user
 
     case Accounts.update_user_username(user, password, user_params) do
       {:ok, user} ->
+        info = "Username updated successfully."
+        changeset = Accounts.change_user_username(user)
         {:noreply,
          socket
-         |> put_flash(:info, "Username updated successfully.")
-         |> assign(:current_user, user)
-         |> assign(:username_form, to_form(Accounts.change_user_username(user)))}
+         |> put_flash(:info, info)
+         |> assign(:username_form, to_form(changeset))}
 
       {:error, changeset} ->
-        {:noreply, assign(socket, :username_form, to_form(Map.put(changeset, :action, :insert)))}
+        {:noreply, assign(socket, :username_form, to_form(changeset))}
     end
   end
 end

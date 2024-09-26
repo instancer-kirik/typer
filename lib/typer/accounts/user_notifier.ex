@@ -8,7 +8,7 @@ defmodule Typer.Accounts.UserNotifier do
     email =
       new()
       |> to(recipient)
-      |> from({"Typer", "contact@example.com"})
+      |> from({"Typer", "noreply-authorizer@instance.select"})
       |> subject(subject)
       |> text_body(body)
 

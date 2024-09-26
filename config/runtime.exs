@@ -125,3 +125,8 @@ end
 config :typer, Typer.Repo, start_apps_before_migration: [:ssl]
 
 config :typer, Typer.Repo, start_apps_before_migration: [:ssl]
+
+config :typer, Typer.Mailer,
+  api_key: System.get_env("SENDGRID_API_KEY")
+
+config :swoosh, :api_client, Typer.Finch

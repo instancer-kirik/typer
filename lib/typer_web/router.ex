@@ -18,6 +18,10 @@ defmodule TyperWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :ensure_confirmed_user do
+    plug :require_confirmed_user
+  end
+
   scope "/", TyperWeb do
 
     pipe_through :browser
@@ -73,6 +77,7 @@ defmodule TyperWeb.Router do
       live "/users/log_in", UserLoginLive, :new
       live "/users/reset_password", UserForgotPasswordLive, :new
       live "/users/reset_password/:token", UserResetPasswordLive, :edit
+      live "/users/confirm/:token", UserConfirmationLive, :edit
     end
 
     post "/users/log_in", UserSessionController, :create
@@ -89,6 +94,11 @@ defmodule TyperWeb.Router do
     end
   end
 
+  scope "/", TyperWeb do
+    pipe_through [:browser, :require_authenticated_user, :ensure_confirmed_user]
+
+    # ... routes that require a confirmed user ...
+  end
   scope "/", TyperWeb do
     pipe_through [:browser]
 

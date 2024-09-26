@@ -353,7 +353,7 @@ textarea {
 /* Reset the opacity and set the color for p, a, and label elements */
 p, a, label {
   opacity: 1; /* Make sure text is fully opaque */
-  color: #9e9999; /* Dark grey color for better readability */
+  color: #7b7b7b; /* Dark grey color for better readability */
   /* You can adjust the color value to fit your design */
 }
 
@@ -443,7 +443,7 @@ label[data-phx-id] {
 .text-gray-200,
 .text-gray-300,
 .text-gray-400 {
-  color: #e5e7eb !important;
+  color: #b4b4b4 !important;
 }
 
 /* Border color for inputs */
@@ -471,7 +471,7 @@ textarea {
 
 /* Style for labels */
 label {
-  color: #e5e7eb !important;
+  color: #a3a3a3 !important;
 }
 
 /* Override any conflicting styles for the form container */
@@ -705,4 +705,66 @@ label {
 /* Add a subtle separator between rows if needed */
 #posts tr:not(:last-child) td {
   border-bottom: 1px solid #2a2a2a !important;
+}
+/* Style for the current user's typing */
+/* Style for the current user's typing */
+.correct {
+  color: #29ac75; /* Green for correct typing */
+}
+
+.incorrect, .error {
+  color: #f00; /* Red for errors */
+}
+
+.untyped {
+  color: #aaa8a8; /* Light grey for untyped text */
+}
+/* Styles for other users' progress */
+.user-other-progress {
+  position: relative;
+}
+
+.user-other-progress::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 2px;
+  background-color: #e97509; /* Color for other users */
+  animation: fadeOut 2s forwards;
+}
+
+/* Style for unsigned users */
+.user-unsigned-progress {
+  position: relative;
+}
+
+.user-unsigned-progress::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 2px;
+  background-color: #3e96d1; /* Color for unsigned users */
+  animation: fadeOut 2s forwards;
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Add this new class for fading out */
+.fading-progress {
+  animation: fadeOut 2s forwards;
+}
+.typing-line {
+  white-space: pre;
+}
+
+#editable-container {
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }

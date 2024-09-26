@@ -167,18 +167,11 @@ end
   def preferences_changeset(user, attrs) do
     user
     |> cast(attrs, [:preferences])
-    |> validate_preferences()
+    |> validate_required([:preferences])
+    # Add any other preference-related validations here
   end
 
-  defp validate_preferences(changeset) do
-    changeset
-    |> validate_change(:preferences, fn :preferences, preferences ->
-      case validate_vault_path(preferences["vault_path"]) do
-        :ok -> []
-        {:error, message} -> [preferences: message]
-      end
-    end)
-  end
+
 
   defp validate_vault_path(nil), do: :ok
   defp validate_vault_path(path) when is_binary(path) do

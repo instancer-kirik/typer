@@ -35,6 +35,21 @@ defmodule Typer.Accounts do
     |> Typer.Repo.update()
   end
 
+  def change_user_preferences(%User{} = user, attrs \\ %{}) do
+    User.preferences_changeset(user, attrs)
+  end
+
+  def change_user_username(%User{} = user, attrs \\ %{}) do
+    User.username_changeset(user, attrs)
+  end
+
+  def update_user_username(%User{} = user, password, attrs) do
+    user
+    |> User.username_changeset(attrs)
+    |> User.validate_current_password(password)
+    |> Repo.update()
+  end
+
   ## Database getters
 
   def get_user_from_session(session) do
@@ -121,6 +136,12 @@ defmodule Typer.Accounts do
     |> User.registration_changeset(attrs)
     |> Ecto.Changeset.put_change(:is_admin, is_admin)
     |> Repo.insert()
+    |> case do
+      {:ok, user} ->
+        {:ok, user}
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   @doc """
@@ -300,14 +321,14 @@ defmodule Typer.Accounts do
 
   """
   def deliver_user_confirmation_instructions(%User{} = user, confirmation_url_fun)
-      when is_function(confirmation_url_fun, 1) do
-    if user.confirmed_at do
-      {:error, :already_confirmed}
-    else
-      {encoded_token, user_token} = UserToken.build_email_token(user, "confirm")
-      Repo.insert!(user_token)
-      UserNotifier.deliver_confirmation_instructions(user, confirmation_url_fun.(encoded_token))
-    end
+    when is_function(confirmation_url_fun, 1) do
+  if user.confirmed_at do
+    {:error, :already_confirmed}
+  else
+    {encoded_token, user_token} = UserToken.build_email_token(user, "confirm")
+    Repo.insert!(user_token)
+    UserNotifier.deliver_confirmation_instructions(user, confirmation_url_fun.(encoded_token))
+  end
   end
 
   @doc """
@@ -392,16 +413,5 @@ defmodule Typer.Accounts do
       {:ok, %{user: user}} -> {:ok, user}
       {:error, :user, changeset, _} -> {:error, changeset}
     end
-  end
-
-  def update_user_username(user, password, attrs) do
-    user
-    |> User.username_changeset(attrs)
-    |> User.validate_current_password(password)
-    |> Repo.update()
-  end
-
-  def change_user_username(user, attrs \\ %{}) do
-    User.username_changeset(user, attrs)
   end
 end

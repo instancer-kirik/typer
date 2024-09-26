@@ -3,12 +3,34 @@ defmodule TyperWeb.PhraseLive do
   require Logger
   alias Typer.Game
 
+  import Phoenix.HTML.Tag
+
+  @max_displayed_users 5  # Limit to displaying 5 other users
+
   @impl true
   def render(assigns) do
     elapsed = elapsed_time(assigns.start_time, assigns.end_time)
     assigns = assign(assigns, :elapsed, elapsed)
 
+    # Fetch associated_post if it's not in the assigns
+    assigns = if Map.has_key?(assigns, :associated_post) do
+      assigns
+    else
+      assign(assigns, :associated_post, get_associated_post(assigns.phrase))
+    end
+
     ~H"""
+    <script>function removeFadingClasses() {
+      document.querySelectorAll('.fading-progress').forEach(el => {
+        el.classList.remove('fading-progress');
+        el.classList.remove('user-other-progress');
+        el.classList.remove('user-unsigned-progress');
+      });
+    }
+
+    // Call this function periodically
+    setInterval(removeFadingClasses, 2000); // Run every 2 seconds
+    </script>
     <div class="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row">
       <div class="w-full md:w-2/3 md:pr-8 mb-8 md:mb-0">
         <div id="layout-container" class="layout-container" phx-hook="ForceReload">
@@ -25,31 +47,44 @@ defmodule TyperWeb.PhraseLive do
                phx-update="ignore"
                contenteditable="true"
                spellcheck="false"
-               data-show-elixir={@show_elixir |> to_string()}
+               data-show-multiplayer={@show_multiplayer |> to_string()}
                style="position: relative; z-index: 2; background: transparent; white-space: pre-wrap;"
                phx-change="process_input">
-            <span style="display: inline;" id="remaining-text"><%= render_typing_area(@phrase, @user_input, @error_positions) %></span>
+            <span style="display: inline;" id="remaining-text"><%= render_typing_area(@phrase, @user_input, @error_positions, @other_users_progress, @displayed_users, @user_identifier) %></span>
           </div>
 
           <br>
 
           <div id="completion-message" phx-update="ignore" class="completion-message"></div>
-          <%= if @accepted_cookies do %>
-            <!-- <a href="/toggle_show_elixir" id="elixir-toggle" class="buttonly" style="color: Silver; background-color: DarkRed;" phx-click="toggle_show_elixir">Toggle Elixir Version</a> -->
-          <% else %>
-            <p>Accept cookies to toggle elixir view</p>
-          <% end %>
-          <%= if @show_elixir do %>
-            <div class="elixir-content">
-              <%= if @completed do %>
+          <%= if @completed do %>
                 <div>Final time: <%= @elapsed %> seconds</div>
               <% else %>
                 Elapsed time: <%= @elapsed %> seconds
               <% end %>
-              <div id="elixir-content">
-                <pre><code class="elixir-content"><%= render_typing_area(@phrase, @user_input, @error_positions) %></code></pre>
+          <%= if @current_user do %>
+            <%= if @accepted_cookies do %>
+              <button id="multiplayer-toggle" class="buttonly" style="color: Silver; background-color: DarkRed;" phx-click="toggle_multiplayer">
+                <%= if @show_multiplayer, do: "Hide", else: "Show" %> Multiplayer View
+              </button>
+            <% else %>
+              <p>Accept cookies to toggle multiplayer view</p>
+            <% end %>
+            <%= if @show_multiplayer do %>
+              <div class="multiplayer-content">
+                <h3>Multiplayer View</h3>
+                <div id="multiplayer-content">
+                  <%= render_typing_area(@phrase, @user_input, @error_positions, @other_users_progress, @displayed_users, @user_identifier) %>
+                </div>
+                <div>
+                  <h4>Other Users Progress:</h4>
+                  <%= for {user_id, progress} <- @other_users_progress do %>
+                    <p>User <%= if is_binary(user_id) and String.starts_with?(user_id, "unsigned_"), do: "Anonymous", else: user_id %>: <%= progress %></p>
+                  <% end %>
+                </div>
               </div>
-            </div>
+            <% end %>
+          <% else %>
+            <p>Sign in to access multiplayer features</p>
           <% end %>
         </div>
       </div>
@@ -83,80 +118,107 @@ defmodule TyperWeb.PhraseLive do
 
   @impl true
   def mount(%{"id" => id_param}, session, socket) do
-    IO.inspect(session, label: "Session")
     current_user = fetch_current_user_for_liveview(session)
     dark_mode = session["dark_mode"] || false
-    show_elixir = session["show_elixir"] || false
+    show_multiplayer = session["show_multiplayer"] || false
     new_user = Map.get(session, "accepted_cookies", false)
 
-    updated_socket =
-      socket
-      |> assign(:current_user, current_user)
-      |> assign(:user_input, "")
-      |> assign(:error_positions, [])
-      |> assign(:start_time, nil)
-      |> assign(:end_time, nil)
-      |> assign(:completed, false)
-      |> assign(:accepted_cookies, new_user)
-      |> assign(:comparison_results, [])
-      |> assign(:show_elixir, show_elixir)
-      |> assign(:dark_mode, dark_mode)
+    # Generate a unique session ID for unsigned users
+    user_identifier = case current_user do
+      %{id: id} -> id
+      _ -> "unsigned_#{:crypto.strong_rand_bytes(8) |> Base.encode64()}"
+    end
 
-    case id_param do
-      "0" ->
-        # Handle the custom phrase case
-        custom_phrase = session["custom_phrase"] || "Default custom phrase"
-        phrase = %Typer.Game.Phrase{text: custom_phrase, id: nil}
-        associated_post = get_associated_post(phrase)
-        leaderboard = Game.get_leaderboard_for_phrase(phrase.id)
+    case Integer.parse(id_param) do
+      {id, _} ->
+        case Typer.Game.get_phrase(id) do
+          nil ->
+            {:ok, socket |> put_flash(:error, "Phrase not found") |> push_redirect(to: "/")}
 
-        {:ok, assign(updated_socket, phrase: phrase, associated_post: associated_post, leaderboard: leaderboard)}
+          phrase ->
+            if connected?(socket) do
+              Phoenix.PubSub.subscribe(Typer.PubSub, "phrase:#{phrase.id}")
+            end
 
-      id ->
-        # Normal case for fetching a phrase by its database ID
-        phrase = Game.get_phrase!(id)
-        associated_post = get_associated_post(phrase)
-        leaderboard = Game.get_leaderboard_for_phrase(phrase.id)
+            associated_post = get_associated_post(phrase)
 
-        {:ok, assign(updated_socket, phrase: phrase, associated_post: associated_post, leaderboard: leaderboard)}
+            # Remove leading, trailing, and interior blank lines from the phrase text
+            cleaned_text = phrase.text
+              |> String.split("\n")
+              |> Enum.reject(&(String.trim(&1) == ""))
+              |> Enum.join("\n")
+              |> String.trim()
+
+            trimmed_phrase = %{phrase | text: cleaned_text}
+
+            updated_socket = socket
+              |> assign(:current_user, current_user)
+              |> assign(:user_identifier, user_identifier)
+              |> assign(:phrase, trimmed_phrase)
+              |> assign(:associated_post, associated_post)
+              |> assign(:user_input, "")
+              |> assign(:error_positions, [])
+              |> assign(:start_time, nil)
+              |> assign(:end_time, nil)
+              |> assign(:completed, false)
+              |> assign(:accepted_cookies, new_user)
+              |> assign(:comparison_results, [])
+              |> assign(:show_multiplayer, show_multiplayer)
+              |> assign(:dark_mode, dark_mode)
+              |> assign(:other_users_progress, %{})
+              |> assign(:displayed_users, [])
+
+            {:ok, updated_socket}
+        end
+      :error ->
+        {:ok, socket |> put_flash(:error, "Invalid phrase ID") |> push_redirect(to: "/")}
     end
   end
 
-  defp split_into_lines(phrase) do
-    phrase
-    |> String.split("\n") # Split by newline characters
-  end
+  defp render_typing_area(phrase, user_input, error_positions, other_users_progress, displayed_users, current_user_identifier) do
+    phrase_lines = String.split(phrase.text, "\n")
+    user_input_lines = String.split(user_input, "\n")
 
-  defp render_typing_area(phrase, user_input, error_positions) do
-    phrase_lines = split_into_lines(phrase.text |> String.trim())
-    user_input_lines = split_into_lines(user_input)
+    content = Enum.with_index(phrase_lines)
+    |> Enum.map(fn {line, line_index} ->
+      line_content = Enum.with_index(String.graphemes(line))
+      |> Enum.map(fn {char, char_index} ->
+        index = Enum.sum(Enum.map(phrase_lines |> Enum.take(line_index), &String.length/1)) + line_index + char_index
+        user_char = user_input_lines |> Enum.at(line_index, "") |> String.graphemes() |> Enum.at(char_index)
 
-    rendered_lines = Enum.with_index(phrase_lines)
-    |> Enum.map(fn {phrase_line, line_index} ->
-      user_input_line = Enum.at(user_input_lines, line_index, "")
-      render_line(phrase_line, user_input_line, error_positions)
+        user_class = cond do
+          user_char == nil -> "untyped"
+          user_char == char -> "correct"
+          index in error_positions -> "error"
+          true -> "incorrect"
+        end
+
+        other_users_classes = Enum.map(other_users_progress, fn {user_id, progress} ->
+          progress_lines = String.split(progress, "\n")
+          progress_length = Enum.sum(Enum.map(progress_lines |> Enum.take(line_index), &String.length/1)) +
+                            String.length(Enum.at(progress_lines, line_index, ""))
+          if index == progress_length - 1 and user_id != current_user_identifier do
+            cond do
+              String.starts_with?(user_id, "unsigned_") -> "user-unsigned-progress"
+              true -> "user-other-progress"
+            end
+          else
+            nil
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
+
+        all_classes = [user_class | other_users_classes] |> Enum.uniq() |> Enum.join(" ")
+
+        Phoenix.HTML.Tag.content_tag(:span, char, class: all_classes, "data-index": index, "phx-hook": "ProgressFader")
+      end)
+
+      Phoenix.HTML.Tag.content_tag(:div, line_content, class: "typing-line")
     end)
 
-    Enum.join(rendered_lines, "\n") |> Phoenix.HTML.raw()
-  end
-
-  defp render_line(phrase_line, user_input_line, error_positions) do
-    phrase_graphemes = String.graphemes(phrase_line)
-    input_graphemes = String.graphemes(user_input_line)
-
-    Enum.with_index(phrase_graphemes)
-    |> Enum.map(fn {char, index} ->
-      user_char = Enum.at(input_graphemes, index)
-      class = cond do
-        user_char == nil -> "incomplete"
-        user_char == char -> "correct"
-        index in error_positions -> "error"
-        true -> "incorrect"
-      end
-
-      Phoenix.HTML.Tag.content_tag(:span, char, class: class) |> Phoenix.HTML.safe_to_string()
-    end)
-    |> Enum.join()
+    Phoenix.HTML.Tag.content_tag(:pre, [
+      Phoenix.HTML.Tag.content_tag(:code, content)
+    ])
   end
 
   def fetch_current_user_for_liveview(session) do
@@ -170,7 +232,7 @@ defmodule TyperWeb.PhraseLive do
   @impl true
   def handle_event("input", %{"user_input" => user_input}, socket) do
     IO.puts("Handling input event")
-    %{phrase: phrase, start_time: start_time} = socket.assigns
+    %{phrase: phrase, start_time: start_time, user_identifier: user_identifier} = socket.assigns
 
     # Set start_time if it's the first input
     start_time = start_time || DateTime.utc_now()
@@ -179,15 +241,25 @@ defmodule TyperWeb.PhraseLive do
     finished_typing = user_input == phrase.text
     IO.puts("Finished typing: #{finished_typing}")
 
+    # Update other_users_progress for all users
+    updated_other_users_progress = Map.put(socket.assigns.other_users_progress, user_identifier, user_input)
+
+    # Broadcast the update to all clients
+    Phoenix.PubSub.broadcast(Typer.PubSub, "phrase:#{phrase.id}", {:user_progress, user_identifier, user_input})
+
     socket = socket
       |> assign(:user_input, user_input)
       |> assign(:start_time, start_time)
       |> assign(:end_time, if(finished_typing, do: DateTime.utc_now(), else: nil))
       |> assign(:completed, finished_typing)
       |> assign(:error_positions, error_positions)
+      |> assign(:other_users_progress, updated_other_users_progress)
+
+    # Log for debugging
+    IO.inspect(user_input, label: "Received user input")
+    IO.inspect(updated_other_users_progress, label: "Updated other users progress")
 
     if finished_typing do
-      IO.puts("Typing completed. Recording attempt...")
       updated_socket = record_attempt(socket)
       {:noreply, updated_socket}
     else
@@ -195,17 +267,26 @@ defmodule TyperWeb.PhraseLive do
     end
   end
 
+  defp update_displayed_users(current_displayed, current_user_id, all_progress) do
+    # Always include the current user
+    updated_displayed = [current_user_id | current_displayed] |> Enum.uniq()
+
+    # Add new users if there's room
+    new_users = Map.keys(all_progress) -- updated_displayed
+    updated_displayed = Enum.take(updated_displayed ++ new_users, @max_displayed_users)
+
+    # Remove users who are no longer in all_progress
+    Enum.filter(updated_displayed, &Map.has_key?(all_progress, &1))
+  end
+
   defp record_attempt(socket) do
-    IO.puts("Inside record_attempt function")
-    %{phrase: phrase, current_user: current_user, start_time: start_time, end_time: end_time} = socket.assigns
+    %{phrase: phrase, current_user: current_user, user_identifier: user_identifier, start_time: start_time, end_time: end_time} = socket.assigns
 
     case {start_time, end_time} do
       {nil, _} ->
-        IO.puts("Start time is nil. Cannot record attempt.")
         socket |> put_flash(:error, "Cannot record attempt: Start time not set.")
 
       {_, nil} ->
-        IO.puts("End time is nil. Cannot record attempt.")
         socket |> put_flash(:error, "Cannot record attempt: End time not set.")
 
       {start_time, end_time} ->
@@ -214,22 +295,18 @@ defmodule TyperWeb.PhraseLive do
         accuracy = calculate_accuracy(phrase.text, socket.assigns.user_input)
 
         attempt_params = %{
-          user_id: current_user.id,
+          user_id: if(is_map(current_user) and Map.has_key?(current_user, :id), do: current_user.id, else: user_identifier),
           phrase_id: phrase.id,
           wpm: trunc(wpm),
           accuracy: trunc(accuracy)
         }
 
-        IO.inspect(attempt_params, label: "Attempt params")
-
         case Game.create_phrase_attempt(attempt_params) do
-          {:ok, attempt} ->
-            IO.inspect(attempt, label: "Created attempt")
+          {:ok, _attempt} ->
             socket
             |> put_flash(:info, "Attempt recorded successfully!")
             |> assign(:leaderboard, Game.get_leaderboard_for_phrase(phrase.id))
           {:error, changeset} ->
-            IO.inspect(changeset, label: "Failed to create attempt")
             socket
             |> put_flash(:error, "Failed to record attempt: #{inspect(changeset.errors)}")
         end
@@ -252,16 +329,14 @@ defmodule TyperWeb.PhraseLive do
   end
 
   @impl true
-  def handle_event("toggle_show_elixir", _params, socket) do
-    current_mode = socket.assigns.show_elixir || false
+  def handle_event("toggle_multiplayer", _params, socket) do
+    current_mode = socket.assigns.show_multiplayer
     new_mode = !current_mode
 
-    {:noreply, assign(socket, show_elixir: new_mode)}
+    {:noreply, assign(socket, show_multiplayer: new_mode)}
   end
 
   def handle_event(event, params, socket) do
-    IO.inspect(event, label: "Event")
-    IO.inspect(params, label: "Params")
     {:noreply, socket}
   end
 
@@ -304,5 +379,12 @@ end
       nil -> nil
       slug -> Typer.Blog.get_post!(slug)
     end
+  end
+
+  @impl true
+  def handle_info({:user_progress, user_identifier, user_input}, socket) do
+    updated_other_users_progress = Map.put(socket.assigns.other_users_progress, user_identifier, user_input)
+    IO.inspect(updated_other_users_progress, label: "Updated other_users_progress in handle_info")
+    {:noreply, assign(socket, :other_users_progress, updated_other_users_progress)}
   end
 end

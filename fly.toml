@@ -15,7 +15,6 @@ kill_signal = 'SIGTERM'
 [env]
   PHX_HOST = 'instance-typer.fly.dev'
   PORT = '8080'
-
 [http_service]
   internal_port = 8080
   force_https = true

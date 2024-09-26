@@ -7,7 +7,7 @@ defmodule TyperWeb.UserRegistrationLive do
   def render(assigns) do
     ~H"""
       <div class="form-container">
-      <div class="mx-auto max-w-md p-4 rounded-lg bg-gray-555 shadow-lg">
+      <div class="mx-auto max-w-md p-4 rounded-lg bg-gray-800 shadow-lg">
         <.header class="text-center">
           Register for an account
           <:subtitle>
@@ -27,22 +27,19 @@ defmodule TyperWeb.UserRegistrationLive do
           phx-trigger-action={@trigger_submit}
           action={~p"/users/log_in?_action=registered"}
           method="post"
-          class="space-y-4"
         >
-          <.error :if={@check_errors}>
-            Oops, something went wrong! Please check the errors below.
-          </.error>
-
-          <.input field={@form[:email]} type="email" label="Email" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 bg-grey"/>
-          <.input field={@form[:password]} type="password" label="Password" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 bg-grey"/>
+          <.input field={@form[:email]} type="email" label="Email" required />
           <.input field={@form[:username]} type="text" label="Username" required />
+          <.input field={@form[:password]} type="password" label="Password" required />
 
           <:actions>
-            <.button phx-disable-with="Creating account..." class="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">Create an account</.button>
+            <.button phx-disable-with="Creating account..." class="w-full">Create an account</.button>
           </:actions>
-
         </.simple_form>
-        <p>so it works, but it's gonna seem like an error on creating account. It doesn't redirect and sign in. It works locally. I didn't write that impl; but I'll fix it later.</p>
+        <p>it works, probably. try logging in.</p>
+        <.error :if={@check_errors}>
+          Oops, something went wrong! Please check the errors below.
+        </.error>
         </div>
       </div>
       """
@@ -52,12 +49,7 @@ defmodule TyperWeb.UserRegistrationLive do
 
   def mount(_params, _session, socket) do
     changeset = Accounts.change_user_registration(%User{})
-    form = to_form(changeset, as: "user")
-
-    socket =
-      socket
-      |> assign(trigger_submit: false, check_errors: false, form: form)
-
+    socket = assign(socket, form: to_form(changeset), trigger_submit: false, check_errors: false)
     {:ok, socket, temporary_assigns: [form: nil]}
   end
 
@@ -70,12 +62,8 @@ defmodule TyperWeb.UserRegistrationLive do
             &url(~p"/users/confirm/#{&1}")
           )
 
-        socket =
-          socket
-          |> assign(trigger_submit: true)
-          |> assign(form: to_form(Accounts.change_user_registration(%User{})))
-
-        {:noreply, socket}
+        changeset = Accounts.change_user_registration(user)
+        {:noreply, socket |> assign(trigger_submit: true, check_errors: false) |> assign_form(changeset)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, socket |> assign(check_errors: true) |> assign_form(changeset)}
@@ -83,9 +71,7 @@ defmodule TyperWeb.UserRegistrationLive do
   end
 
   def handle_event("validate", %{"user" => user_params}, socket) do
-    IO.inspect(user_params, label: "User params")
     changeset = Accounts.change_user_registration(%User{}, user_params)
-    IO.inspect(changeset, label: "Changeset")
     {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
   end
 
@@ -95,7 +81,7 @@ defmodule TyperWeb.UserRegistrationLive do
     if changeset.valid? do
       assign(socket, form: form, check_errors: false)
     else
-      assign(socket, form: form)
+      assign(socket, form: form, check_errors: true)
     end
   end
 end

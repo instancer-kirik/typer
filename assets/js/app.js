@@ -26,7 +26,13 @@ import ResizeContent from "./hooks/resize_content"
 
 //import "htmx.org";
 let Hooks = { ResizeContent: ResizeContent};
-
+// Hooks.Multiplayer = {
+//   mounted() {
+//     this.handleEvent("update_user_input", (payload) => {
+//       console.log(payload.user_input);
+//     });
+//   }
+// };
 
 Hooks.DarkModeToggle = {
   mounted() {
@@ -166,6 +172,21 @@ Hooks.HashCalculator = {
     });
   }
 };
+Hooks.ProgressFader = {
+  mounted() {
+    this.el.addEventListener("animationend", () => {
+      this.el.classList.remove("user-other-progress", "user-unsigned-progress");
+    });
+  },
+  updated() {
+    if (this.el.classList.contains("user-other-progress") || this.el.classList.contains("user-unsigned-progress")) {
+      setTimeout(() => {
+        this.el.querySelector("::after").classList.add("fading");
+      }, 100);
+    }
+  }
+}
+
 
 
 Hooks.Countdown = {
@@ -196,15 +217,15 @@ Hooks.Countdown = {
 Hooks.EditableContainer = {
   
   mounted() {
-    this.el.addEventListener('input', (e) => {
-      this.pushEventTo(this.el, "process_input", { value: e.target.innerText });
+    this.el.addEventListener('input', () => {
+      this.sendInputToServer();
     });
      // Initialize timer-related properties
      this.timerStarted = false;
      this.elapsedTime = 0;
      this.startTime = null;
      this.userInput ="";
-     this.showElixir = this.el.dataset.showElixir === "true";
+    //'' this.showElixir = this.el.dataset.showElixir === "true";
     const phraseData =document.getElementById("phrase-data");
     if (!phraseData ) return;
     this.phraseText =phraseData.dataset.phraseText; //this.convertToEntities(phraseData.dataset.phraseText);
@@ -250,8 +271,8 @@ Hooks.EditableContainer = {
         "&nbsp;&nbsp;&nbsp;&nbsp;" + "e.preventDefault();" + "<br>" +
         "&nbsp;&nbsp;&nbsp;&nbsp;" + "document.getElementById('completion-message').innerText = " +"<br>"+ 
         "&nbsp;&nbsp;&nbsp;&nbsp;" +"\"if (e.key =='Tab'){" + "<br>" + 
-        "&nbsp;&nbsp;&nbsp;&nbsp;" +"&nbsp;&nbsp;&nbsp;&nbsp;" + "e.preventDefault();" + "<br>" + 
-        "&nbsp;&nbsp;&nbsp;&nbsp;" +"&nbsp;&nbsp;&nbsp;&nbsp;" +"document.getElementById('completion-message').innerText = ..." + "<br>" + 
+        "&nbsp;&nbsp;&nbsp;&nbsp;" +"&nbsp;&nbsp;&nbsp;&nbsp;" + "e.preventDefault();" + "<br>" +
+        "&nbsp;&nbsp;&nbsp;&nbsp;" +"&nbsp;&nbsp;&nbsp;&nbsp;" +"document.getElementById('completion-message').innerText = ..." + "<br>" +
         "&nbsp;&nbsp;&nbsp;&nbsp;" + "&nbsp;&nbsp;&nbsp;&nbsp;" +  "this.el.focus();"+ "<br>" +
         "&nbsp;&nbsp;&nbsp;&nbsp;" +"}\";" + "<br>" +
         "&nbsp;&nbsp;&nbsp;&nbsp;" +  "this.el.focus();"+ "<br>" +"}";
@@ -654,11 +675,10 @@ adjustCursorForInitialNewlinesAndIndentation() {
       }
     },
         updateAndPushUserInput() {
-          if(this.showElixir){
           // Obtain the full text including both the user's input and the remaining text
           let fullText = this.el.innerText;
       
-          // If you have stored the initial remaining text in this.remainingText upon initialization or another method,
+          // If you have stored the initial remaining text in this.remainingTextSpan upon initialization or another method,
           // you can use it to trim off the remaining text from the full text.
           
           if (this.remainingTextSpan) {
@@ -672,11 +692,14 @@ adjustCursorForInitialNewlinesAndIndentation() {
       
           // Trim the userInput to remove any leading or trailing whitespace
           this.userInput = this.userInput.trim();
-      
+          //if(this.showElixir){
           // Now, send the trimmed userInput to the server
           this.pushEvent("input", { user_input: this.userInput });
-        }
-      },
+          // Log the sent input for debugging
+          console.log("Sent user input to server:", this.userInput);
+          //}
+          
+        },
       
   startTimer() {
     if (!this.timerStarted) {
@@ -764,8 +787,18 @@ adjustCursorForInitialNewlinesAndIndentation() {
     }
   }
   
-  }
+  },
+  sendInputToServer() {
+    let userInput = this.getUserInput();
+    this.pushEvent("input", { user_input: userInput });
+  },
 
+  
+  
+  getUserInput() {
+    // This method should return the current user input as a string
+    return this.el.innerText;
+  },
 
 };
 
@@ -790,12 +823,13 @@ liveSocket.connect()
 document.addEventListener('DOMContentLoaded', () => {
   
 
-//-------------------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------
   
 function darkExpected() {
   return localStorage.theme === 'dark' || (!('theme' in localStorage) &&
     window.matchMedia('(prefers-color-scheme: dark)').matches);
 }
+
 
 function initDarkMode() {
   // On page load or when changing themes, best to add inline in `head` to avoid FOUC
@@ -803,13 +837,16 @@ function initDarkMode() {
   else document.documentElement.classList.remove('dark');
 }
 
+
 window.addEventListener("toogle-darkmode", e => {
   if (darkExpected()) localStorage.theme = 'light';
   else localStorage.theme = 'dark';
   initDarkMode();
 })
 
+
 });
+
 
 window.liveSocket = liveSocket
 
