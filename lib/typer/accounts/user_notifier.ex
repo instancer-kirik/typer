@@ -13,6 +13,7 @@ defmodule Typer.Accounts.UserNotifier do
       |> text_body(body)
 
     with {:ok, _metadata} <- Mailer.deliver(email) do
+      IO.inspect(email, label: "Email")
       {:ok, email}
     end
   end

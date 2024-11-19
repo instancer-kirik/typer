@@ -27,6 +27,7 @@ defmodule TyperWeb.Router do
     pipe_through :browser
     # Public routes
     get "/", PageController, :home
+    get "/portal", PortalController, :index
     live "/phrases/:id", PhraseLive, :show, as: :phrase
 
     post "/set_custom_phrase", SessionController, :set_custom_phrase

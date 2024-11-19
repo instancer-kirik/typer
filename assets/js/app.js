@@ -219,6 +219,7 @@ Hooks.EditableContainer = {
   mounted() {
     this.el.addEventListener('input', () => {
       this.sendInputToServer();
+      // this.updateColorFillEffect();
     });
      // Initialize timer-related properties
      this.timerStarted = false;
@@ -285,7 +286,16 @@ Hooks.EditableContainer = {
     // Calculate initial indentation of the first line and adjust cursor position accordingly
   this.adjustCursorForInitialNewlinesAndIndentation();
   this.updateRemainingText();//this takes it out of the initial render as block to multiline regular display
-  },//mounted
+  // this.colorFillEffect = this.el.querySelector('.color-fill-effect');
+  // if (!this.colorFillEffect) {
+  //   this.colorFillEffect = document.createElement('div');
+  //   this.colorFillEffect.className = 'color-fill-effect';
+  //   this.el.insertBefore(this.colorFillEffect, this.el.firstChild);
+  // }
+
+  //   this.updateColorFillEffect();
+  },//mounted  
+
   
   updated() {
     this.el.focus();
@@ -315,7 +325,22 @@ Hooks.EditableContainer = {
   //   // Ensure cursor management to place the cursor correctly after updates
   //   this.setCursorPosition();
   // },
- 
+  // updateColorFillEffect() {
+  //   if (!this.colorFillEffect) return;
+
+  //   const progress = this.typedLength / this.typableCharacters;
+  //   const hue = progress * 120; // This will transition from red (0) to green (120)
+  //   this.colorFillEffect.style.width = `${progress * 100}%`;
+  //   this.colorFillEffect.style.backgroundColor = `hsla(${hue}, 100%, 50%, 0.3)`;
+  // },
+  
+  // handleCharacterInput(key) {
+  //   if (this.typedLength < this.typableCharacters) {
+  //     this.typedLength++;
+  //     this.updateColorFillEffect();
+  //   }
+  // },
+
 
 
   handleCharacterInput(char) {
@@ -823,7 +848,7 @@ liveSocket.connect()
 document.addEventListener('DOMContentLoaded', () => {
   
 
-//---------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   
 function darkExpected() {
   return localStorage.theme === 'dark' || (!('theme' in localStorage) &&

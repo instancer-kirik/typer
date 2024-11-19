@@ -58,7 +58,9 @@ defmodule Typer.MixProject do
 
       {:makeup_elixir, ">= 0.0.0"},
       {:earmark, "~> 1.4"},
-      {:makeup_erlang, ">= 0.0.0"}
+      {:makeup_erlang, ">= 0.0.0"},
+
+      {:con_cache, "~> 1.0"}  #typer mp optimizing redis like thing
     ]
   end
 

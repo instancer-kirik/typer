@@ -2,12 +2,234 @@ defmodule TyperWeb.PhraseLive do
   use TyperWeb, :live_view
   require Logger
   alias Typer.Game
+  alias ConCache
 
-  import Phoenix.HTML.Tag
+  @inactive_timeout :timer.minutes(5)
+  @prune_interval 60_000 # 1 minute
 
-  @max_displayed_users 5  # Limit to displaying 5 other users
+  def mount(%{"id" => id_param}, session, socket) do
+    current_user = fetch_current_user_for_liveview(session)
+    dark_mode = session["dark_mode"] || false
+    show_multiplayer = session["show_multiplayer"] || false
+    new_user = Map.get(session, "accepted_cookies", false)
 
-  @impl true
+    # Generate a unique session ID for unsigned users
+    user_identifier = get_user_identifier(current_user)
+
+    case Integer.parse(id_param) do
+      {id, _} ->
+        case Typer.Game.get_phrase(id) do
+          nil ->
+            {:ok, socket |> put_flash(:error, "Phrase not found") |> push_redirect(to: "/")}
+
+          phrase ->
+            if connected?(socket) do
+              :timer.send_interval(@prune_interval, self(), :prune_inactive_users)
+              Phoenix.PubSub.subscribe(Typer.PubSub, "phrase:#{phrase.id}")
+            end
+
+            associated_post = get_associated_post(phrase)
+
+            # Remove leading, trailing, and interior blank lines from the phrase text
+            cleaned_text = phrase.text
+              |> String.split("\n")
+              |> Enum.reject(&(String.trim(&1) == ""))
+              |> Enum.join("\n")
+              |> String.trim()
+
+            trimmed_phrase = %{phrase | text: cleaned_text}
+
+            other_users_progress = get_other_users_progress(phrase.id, user_identifier)
+
+            updated_socket = socket
+              |> assign(:current_user, current_user)
+              |> assign(:user_identifier, user_identifier)
+              |> assign(:phrase, trimmed_phrase)
+              |> assign(:associated_post, associated_post)
+              |> assign(:user_input, "")
+              |> assign(:error_positions, [])
+              |> assign(:start_time, nil)
+              |> assign(:end_time, nil)
+              |> assign(:completed, false)
+              |> assign(:accepted_cookies, new_user)
+              |> assign(:comparison_results, [])
+              |> assign(:show_multiplayer, show_multiplayer)
+              |> assign(:dark_mode, dark_mode)
+              |> assign(:displayed_users, [])
+              |> assign(:other_users_progress, other_users_progress)
+            {:ok, updated_socket}
+        end
+      :error ->
+        {:ok, socket |> put_flash(:error, "Invalid phrase ID") |> push_redirect(to: "/")}
+    end
+  end
+
+  defp render_typing_area(assigns) do
+    ~H"""
+    <div id="typing-area">
+      <%= for {line, line_index} <- Enum.with_index(String.split(@phrase.text, "\n")) do %>
+        <div class="typing-line">
+          <%= for {char, char_index} <- Enum.with_index(String.graphemes(line)) do %>
+            <% index = Enum.sum(String.split(@phrase.text, "\n") |> Enum.take(line_index) |> Enum.map(&String.length/1)) + char_index %>
+            <% user_char = @user_input |> String.split("\n") |> Enum.at(line_index, "") |> String.graphemes() |> Enum.at(char_index) %>
+
+            <% user_class = cond do
+              user_char == nil -> "untyped"
+              user_char == char -> "correct"
+              index in @error_positions -> "error"
+              true -> "incorrect"
+            end %>
+
+            <% other_users_classes = Enum.map(@other_users_progress, fn {user_id, progress} ->
+              progress_length = String.length(progress)
+              if index == progress_length - 1 do
+                cond do
+                  is_binary(user_id) and String.starts_with?(user_id, "unsigned_") -> "user-unsigned-progress"
+                  is_binary(user_id) -> "user-other-progress"
+                  true -> nil
+                end
+              else
+                nil
+              end
+            end)
+            |> Enum.reject(&is_nil/1) %>
+
+            <% all_classes = [user_class | other_users_classes] |> Enum.uniq() |> Enum.join(" ") %>
+
+            <span class={all_classes} data-index={index}><%= char %></span>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  def handle_params(_params, _url, socket) do
+    if connected?(socket) and is_nil(socket.assigns.user_input) do
+      {:noreply, assign(socket, user_input: "", start_time: DateTime.utc_now())}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def fetch_current_user_for_liveview(session) do
+    user_token = Map.get(session, "user_token")
+    user = user_token && Typer.Accounts.get_user_by_session_token(user_token)
+
+    # Ensure a default user structure if not found; adjust according to your application needs
+    user || %{}
+  end
+
+  def handle_event("input", %{"user_input" => user_input}, socket) do
+    current_time = System.system_time(:second)
+    phrase_id = socket.assigns.phrase.id
+    user_identifier = socket.assigns.user_identifier
+
+    ConCache.put(:user_progress, {phrase_id, user_identifier}, {user_input, current_time})
+
+    Phoenix.PubSub.broadcast(
+      Typer.PubSub,
+      "phrase:#{phrase_id}",
+      {:user_progress, user_identifier, user_input}
+    )
+
+    {:noreply, assign(socket, :user_input, user_input)}
+  end
+
+  def handle_event("toggle_multiplayer", _params, socket) do
+    current_mode = socket.assigns.show_multiplayer
+    new_mode = !current_mode
+
+    {:noreply, assign(socket, show_multiplayer: new_mode)}
+  end
+
+  def handle_event(event, params, socket) do
+    {:noreply, socket}
+  end
+
+  defp maybe_complete(socket, input) do
+    # If the input matches the phrase and end_time is not set, mark as completed and set end_time
+    if input == socket.assigns.phrase.text && is_nil(socket.assigns.end_time) do
+        socket
+        |> assign(:end_time, DateTime.utc_now())
+        |> assign(:completed, true)
+     else
+    socket
+  end
+end
+
+  defp elapsed_time(start_time, end_time) do
+    case {start_time, end_time} do
+      {nil, _} -> 0.0
+      {_, nil} ->
+        diff_in_seconds(DateTime.utc_now(), start_time)
+      {_, _} ->
+        diff_in_seconds(end_time, start_time)
+    end
+  end
+
+  defp diff_in_seconds(later_time, earlier_time) do
+    DateTime.diff(later_time, earlier_time, :millisecond) / 1000.0
+  end
+
+  defp calculate_error_positions(phrase, user_input) do
+    phrase_chars = String.graphemes(phrase)
+    input_chars = String.graphemes(user_input)
+
+    Enum.zip(phrase_chars, input_chars)
+    |> Enum.with_index()
+    |> Enum.filter(fn {{p, u}, _} -> p != u end)
+    |> Enum.map(fn {_, index} -> index end)
+  end
+
+  defp get_associated_post(phrase) do
+    ConCache.get_or_store(:post_cache, phrase.post_slug, fn ->
+      case phrase.post_slug do
+        nil -> nil
+        slug -> Typer.Blog.get_post!(slug)
+      end
+    end)
+  end
+
+  def handle_info({:user_progress, user_identifier, user_input}, socket) do
+    phrase_id = socket.assigns.phrase.id
+    current_time = System.system_time(:second)
+    ConCache.put(:user_progress, {phrase_id, user_identifier}, {user_input, current_time})
+
+    other_users_progress = get_other_users_progress(phrase_id, socket.assigns.user_identifier)
+
+    {:noreply,
+     socket
+     |> assign(:other_users_progress, other_users_progress)
+     |> push_event("user_progress_update", %{user_identifier: user_identifier, progress: user_input})}
+  end
+
+  def handle_info(:prune_inactive_users, socket) do
+    phrase_id = socket.assigns.phrase.id
+    current_time = System.system_time(:second)
+
+    active_users =
+      ConCache.ets(:user_progress)
+      |> :ets.tab2list()
+      |> Enum.filter(fn {{pid, _}, {_, timestamp}} ->
+        pid == phrase_id && current_time - timestamp < @inactive_timeout
+      end)
+      |> Enum.map(fn {{_, user_id}, _} -> user_id end)
+
+    # Remove inactive users from ConCache
+    ConCache.ets(:user_progress)
+    |> :ets.tab2list()
+    |> Enum.each(fn {{pid, user_id}, _} ->
+      if pid == phrase_id && user_id not in active_users do
+        ConCache.delete(:user_progress, {pid, user_id})
+      end
+    end)
+
+    other_users_progress = get_other_users_progress(phrase_id, socket.assigns.user_identifier)
+
+    {:noreply, assign(socket, :other_users_progress, other_users_progress)}
+  end
+
   def render(assigns) do
     elapsed = elapsed_time(assigns.start_time, assigns.end_time)
     assigns = assign(assigns, :elapsed, elapsed)
@@ -49,8 +271,9 @@ defmodule TyperWeb.PhraseLive do
                spellcheck="false"
                data-show-multiplayer={@show_multiplayer |> to_string()}
                style="position: relative; z-index: 2; background: transparent; white-space: pre-wrap;"
-               phx-change="process_input">
-            <span style="display: inline;" id="remaining-text"><%= render_typing_area(@phrase, @user_input, @error_positions, @other_users_progress, @displayed_users, @user_identifier) %></span>
+               phx-change="process_input"
+               phx-debounce="100">
+            <span style="display: inline;" id="remaining-text"><%= render_typing_area(assigns) %></span>
           </div>
 
           <br>
@@ -73,12 +296,12 @@ defmodule TyperWeb.PhraseLive do
               <div class="multiplayer-content">
                 <h3>Multiplayer View</h3>
                 <div id="multiplayer-content">
-                  <%= render_typing_area(@phrase, @user_input, @error_positions, @other_users_progress, @displayed_users, @user_identifier) %>
+                  <%= render_typing_area(assigns) %>
                 </div>
                 <div>
                   <h4>Other Users Progress:</h4>
                   <%= for {user_id, progress} <- @other_users_progress do %>
-                    <p>User <%= if is_binary(user_id) and String.starts_with?(user_id, "unsigned_"), do: "Anonymous", else: user_id %>: <%= progress %></p>
+                    <p><%= display_user_id(user_id) %>: <%= String.slice(progress, 0..20) %>...</p>
                   <% end %>
                 </div>
               </div>
@@ -116,167 +339,12 @@ defmodule TyperWeb.PhraseLive do
     """
   end
 
-  @impl true
-  def mount(%{"id" => id_param}, session, socket) do
-    current_user = fetch_current_user_for_liveview(session)
-    dark_mode = session["dark_mode"] || false
-    show_multiplayer = session["show_multiplayer"] || false
-    new_user = Map.get(session, "accepted_cookies", false)
-
-    # Generate a unique session ID for unsigned users
-    user_identifier = case current_user do
-      %{id: id} -> id
-      _ -> "unsigned_#{:crypto.strong_rand_bytes(8) |> Base.encode64()}"
-    end
-
-    case Integer.parse(id_param) do
-      {id, _} ->
-        case Typer.Game.get_phrase(id) do
-          nil ->
-            {:ok, socket |> put_flash(:error, "Phrase not found") |> push_redirect(to: "/")}
-
-          phrase ->
-            if connected?(socket) do
-              Phoenix.PubSub.subscribe(Typer.PubSub, "phrase:#{phrase.id}")
-            end
-
-            associated_post = get_associated_post(phrase)
-
-            # Remove leading, trailing, and interior blank lines from the phrase text
-            cleaned_text = phrase.text
-              |> String.split("\n")
-              |> Enum.reject(&(String.trim(&1) == ""))
-              |> Enum.join("\n")
-              |> String.trim()
-
-            trimmed_phrase = %{phrase | text: cleaned_text}
-
-            updated_socket = socket
-              |> assign(:current_user, current_user)
-              |> assign(:user_identifier, user_identifier)
-              |> assign(:phrase, trimmed_phrase)
-              |> assign(:associated_post, associated_post)
-              |> assign(:user_input, "")
-              |> assign(:error_positions, [])
-              |> assign(:start_time, nil)
-              |> assign(:end_time, nil)
-              |> assign(:completed, false)
-              |> assign(:accepted_cookies, new_user)
-              |> assign(:comparison_results, [])
-              |> assign(:show_multiplayer, show_multiplayer)
-              |> assign(:dark_mode, dark_mode)
-              |> assign(:other_users_progress, %{})
-              |> assign(:displayed_users, [])
-
-            {:ok, updated_socket}
-        end
-      :error ->
-        {:ok, socket |> put_flash(:error, "Invalid phrase ID") |> push_redirect(to: "/")}
-    end
-  end
-
-  defp render_typing_area(phrase, user_input, error_positions, other_users_progress, displayed_users, current_user_identifier) do
-    phrase_lines = String.split(phrase.text, "\n")
-    user_input_lines = String.split(user_input, "\n")
-
-    content = Enum.with_index(phrase_lines)
-    |> Enum.map(fn {line, line_index} ->
-      line_content = Enum.with_index(String.graphemes(line))
-      |> Enum.map(fn {char, char_index} ->
-        index = Enum.sum(Enum.map(phrase_lines |> Enum.take(line_index), &String.length/1)) + line_index + char_index
-        user_char = user_input_lines |> Enum.at(line_index, "") |> String.graphemes() |> Enum.at(char_index)
-
-        user_class = cond do
-          user_char == nil -> "untyped"
-          user_char == char -> "correct"
-          index in error_positions -> "error"
-          true -> "incorrect"
-        end
-
-        other_users_classes = Enum.map(other_users_progress, fn {user_id, progress} ->
-          progress_lines = String.split(progress, "\n")
-          progress_length = Enum.sum(Enum.map(progress_lines |> Enum.take(line_index), &String.length/1)) +
-                            String.length(Enum.at(progress_lines, line_index, ""))
-          if index == progress_length - 1 and user_id != current_user_identifier do
-            cond do
-              String.starts_with?(user_id, "unsigned_") -> "user-unsigned-progress"
-              true -> "user-other-progress"
-            end
-          else
-            nil
-          end
-        end)
-        |> Enum.reject(&is_nil/1)
-
-        all_classes = [user_class | other_users_classes] |> Enum.uniq() |> Enum.join(" ")
-
-        Phoenix.HTML.Tag.content_tag(:span, char, class: all_classes, "data-index": index, "phx-hook": "ProgressFader")
-      end)
-
-      Phoenix.HTML.Tag.content_tag(:div, line_content, class: "typing-line")
-    end)
-
-    Phoenix.HTML.Tag.content_tag(:pre, [
-      Phoenix.HTML.Tag.content_tag(:code, content)
-    ])
-  end
-
-  def fetch_current_user_for_liveview(session) do
-    user_token = Map.get(session, "user_token")
-    user = user_token && Typer.Accounts.get_user_by_session_token(user_token)
-
-    # Ensure a default user structure if not found; adjust according to your application needs
-    user || %{}
-  end
-
-  @impl true
-  def handle_event("input", %{"user_input" => user_input}, socket) do
-    IO.puts("Handling input event")
-    %{phrase: phrase, start_time: start_time, user_identifier: user_identifier} = socket.assigns
-
-    # Set start_time if it's the first input
-    start_time = start_time || DateTime.utc_now()
-
-    error_positions = calculate_error_positions(phrase.text, user_input)
-    finished_typing = user_input == phrase.text
-    IO.puts("Finished typing: #{finished_typing}")
-
-    # Update other_users_progress for all users
-    updated_other_users_progress = Map.put(socket.assigns.other_users_progress, user_identifier, user_input)
-
-    # Broadcast the update to all clients
-    Phoenix.PubSub.broadcast(Typer.PubSub, "phrase:#{phrase.id}", {:user_progress, user_identifier, user_input})
-
-    socket = socket
-      |> assign(:user_input, user_input)
-      |> assign(:start_time, start_time)
-      |> assign(:end_time, if(finished_typing, do: DateTime.utc_now(), else: nil))
-      |> assign(:completed, finished_typing)
-      |> assign(:error_positions, error_positions)
-      |> assign(:other_users_progress, updated_other_users_progress)
-
-    # Log for debugging
-    IO.inspect(user_input, label: "Received user input")
-    IO.inspect(updated_other_users_progress, label: "Updated other users progress")
-
-    if finished_typing do
-      updated_socket = record_attempt(socket)
-      {:noreply, updated_socket}
+  defp display_user_id(user_id) do
+    if is_binary(user_id) and String.starts_with?(user_id, "unsigned_") do
+      "Anonymous"
     else
-      {:noreply, socket}
+      user_id
     end
-  end
-
-  defp update_displayed_users(current_displayed, current_user_id, all_progress) do
-    # Always include the current user
-    updated_displayed = [current_user_id | current_displayed] |> Enum.uniq()
-
-    # Add new users if there's room
-    new_users = Map.keys(all_progress) -- updated_displayed
-    updated_displayed = Enum.take(updated_displayed ++ new_users, @max_displayed_users)
-
-    # Remove users who are no longer in all_progress
-    Enum.filter(updated_displayed, &Map.has_key?(all_progress, &1))
   end
 
   defp record_attempt(socket) do
@@ -328,63 +396,21 @@ defmodule TyperWeb.PhraseLive do
     (correct_chars / length(original_chars)) * 100 |> Float.round(2)
   end
 
-  @impl true
-  def handle_event("toggle_multiplayer", _params, socket) do
-    current_mode = socket.assigns.show_multiplayer
-    new_mode = !current_mode
-
-    {:noreply, assign(socket, show_multiplayer: new_mode)}
-  end
-
-  def handle_event(event, params, socket) do
-    {:noreply, socket}
-  end
-
-  defp maybe_complete(socket, input) do
-    # If the input matches the phrase and end_time is not set, mark as completed and set end_time
-    if input == socket.assigns.phrase.text && is_nil(socket.assigns.end_time) do
-        socket
-        |> assign(:end_time, DateTime.utc_now())
-        |> assign(:completed, true)
-     else
-    socket
-  end
-end
-
-  defp elapsed_time(start_time, end_time) do
-    case {start_time, end_time} do
-      {nil, _} -> 0.0
-      {_, nil} ->
-        diff_in_seconds(DateTime.utc_now(), start_time)
-      {_, _} ->
-        diff_in_seconds(end_time, start_time)
-    end
-  end
-
-  defp diff_in_seconds(later_time, earlier_time) do
-    DateTime.diff(later_time, earlier_time, :millisecond) / 1000.0
-  end
-
-  defp calculate_error_positions(phrase, user_input) do
-    phrase_chars = String.graphemes(phrase)
-    input_chars = String.graphemes(user_input)
-
-    Enum.filter(0..min(length(phrase_chars), length(input_chars)) - 1, fn index ->
-      Enum.at(phrase_chars, index) != Enum.at(input_chars, index)
+  defp get_other_users_progress(phrase_id, current_user_identifier) do
+    ConCache.ets(:user_progress)
+    |> :ets.tab2list()
+    |> Enum.filter(fn
+      {{^phrase_id, user_id}, _} -> user_id != current_user_identifier
+      _ -> false
     end)
+    |> Enum.map(fn {{_, user_id}, {progress, _}} -> {user_id, progress} end)
+    |> Enum.into(%{})
   end
 
-  defp get_associated_post(phrase) do
-    case phrase.post_slug do
-      nil -> nil
-      slug -> Typer.Blog.get_post!(slug)
+  defp get_user_identifier(current_user) do
+    case current_user do
+      %{id: id} -> id
+      _ -> "unsigned_#{:crypto.strong_rand_bytes(8) |> Base.encode64()}"
     end
-  end
-
-  @impl true
-  def handle_info({:user_progress, user_identifier, user_input}, socket) do
-    updated_other_users_progress = Map.put(socket.assigns.other_users_progress, user_identifier, user_input)
-    IO.inspect(updated_other_users_progress, label: "Updated other_users_progress in handle_info")
-    {:noreply, assign(socket, :other_users_progress, updated_other_users_progress)}
   end
 end
