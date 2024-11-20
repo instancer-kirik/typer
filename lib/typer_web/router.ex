@@ -1,8 +1,9 @@
 defmodule TyperWeb.Router do
-
-  use TyperWeb, :router
-
-  import TyperWeb.UserAuth
+  use Phoenix.Router
+  import Phoenix.LiveView.Router
+  import Plug.BasicAuth
+  import Phoenix.Controller
+  import Accounts.Auth
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -11,20 +12,28 @@ defmodule TyperWeb.Router do
     plug :put_root_layout, html: {TyperWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-    plug :fetch_current_user
+    plug Accounts.FetchCurrentUserPlug
   end
 
   pipeline :api do
     plug :accepts, ["json"]
   end
 
+  pipeline :admins_only do
+    plug :basic_auth, username: "admin", password: "secret" # TODO: move to config
+  end
+
+  pipeline :authenticated do
+    plug Accounts.EnsureAuthenticatedPlug
+  end
+
   pipeline :ensure_confirmed_user do
-    plug :require_confirmed_user
+    plug Accounts.EnsureConfirmedUserPlug
   end
 
   scope "/", TyperWeb do
-
     pipe_through :browser
+
     # Public routes
     get "/", PageController, :home
     get "/portal", PortalController, :index
@@ -44,30 +53,64 @@ defmodule TyperWeb.Router do
     get "/posts/:slug/images/:filename", ImageController, :show
   end
 
+  # Authenticated routes
+  scope "/", TyperWeb do
+    pipe_through [:browser, :authenticated, :ensure_confirmed_user]
 
-  # Other scopes may use custom stacks.
-  # scope "/api", TyperWeb do
-  #   pipe_through :api
-  # end
+    live "/users/settings", UserSettingsLive, :edit
+    live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
+    live "/users/confirm/:token", UserConfirmationLive, :edit
+    live "/users/confirm", UserConfirmationInstructionsLive, :new
+    live "/home", HomeLive, :index
+    live "/hash_slinging_hasher", HashSlingingHasherLive, :index
+  end
 
-  # Enable LiveDashboard and Swoosh mailbox preview in development
-  if Application.compile_env(:typer, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
+  # Admin routes
+  scope "/admin", TyperWeb do
+    pipe_through [:browser, :authenticated, :admins_only]
+
+    live "/dashboard", AdminDashboardLive
+  end
+
+  # Routes meant to be used within the Ves platform
+  scope "/" do
+    pipe_through [:browser, :authenticated]
+
+    live "/", TyperWeb.DashboardLive
+    live "/practice", TyperWeb.PracticeLive
+    live "/multiplayer", TyperWeb.MultiplayerLive
+
+    live "/rooms/:id", TyperWeb.RoomLive
+    live "/stats", TyperWeb.StatsLive
+  end
+
+  # Routes when accessed directly (not through Ves)
+  scope "/typer" do
+    pipe_through [:browser, :authenticated]
+
+    live "/", TyperWeb.DashboardLive
+    live "/practice", TyperWeb.PracticeLive
+    live "/multiplayer", TyperWeb.MultiplayerLive
+
+    live "/rooms/:id", TyperWeb.RoomLive
+    live "/stats", TyperWeb.StatsLive
+  end
+
+  # Enable LiveDashboard in development
+  if Mix.env() in [:dev, :test] do
     import Phoenix.LiveDashboard.Router
 
-    scope "/dev" do
-      pipe_through :browser
-
+    scope "/" do
+      pipe_through [:browser, :authenticated, :admins_only]
       live_dashboard "/dashboard", metrics: TyperWeb.Telemetry
-      forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end
 
-  ## Authentication routes
+  scope "/", TyperWeb do
+    pipe_through [:browser]
+
+    delete "/users/log_out", UserSessionController, :delete
+  end
 
   scope "/", TyperWeb do
     pipe_through [:browser, :redirect_if_user_is_authenticated]
@@ -78,38 +121,8 @@ defmodule TyperWeb.Router do
       live "/users/log_in", UserLoginLive, :new
       live "/users/reset_password", UserForgotPasswordLive, :new
       live "/users/reset_password/:token", UserResetPasswordLive, :edit
-      live "/users/confirm/:token", UserConfirmationLive, :edit
     end
 
     post "/users/log_in", UserSessionController, :create
-  end
-
-  scope "/", TyperWeb do
-    pipe_through [:browser, :require_authenticated_user]
-
-    live_session :require_authenticated_user,
-      on_mount: [{TyperWeb.UserAuth, :ensure_authenticated}] do
-
-      live "/users/settings", UserSettingsLive, :edit
-      live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
-    end
-  end
-
-  scope "/", TyperWeb do
-    pipe_through [:browser, :require_authenticated_user, :ensure_confirmed_user]
-
-    # ... routes that require a confirmed user ...
-  end
-  scope "/", TyperWeb do
-    pipe_through [:browser]
-
-    delete "/users/log_out", UserSessionController, :delete
-    live "/home", HomeLive, :index
-    live "/hash_slinging_hasher", HashSlingingHasherLive, :index
-    live_session :current_user,
-      on_mount: [{TyperWeb.UserAuth, :mount_current_user}] do
-      live "/users/confirm/:token", UserConfirmationLive, :edit
-      live "/users/confirm", UserConfirmationInstructionsLive, :new
-    end
   end
 end

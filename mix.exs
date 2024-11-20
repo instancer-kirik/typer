@@ -32,6 +32,9 @@ defmodule Typer.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      # Auth
+      {:accounts, in_umbrella: true},  # Add centralized auth
+
       {:pbkdf2_elixir, "~> 2.0"},
       {:phoenix, "~> 1.7.14"},
       {:phoenix_ecto, "~> 4.6.2"},
@@ -54,13 +57,13 @@ defmodule Typer.MixProject do
       {:plug_cowboy, "~> 2.7.2"},
       {:file_system, "~> 1.0"},
 
-      # Add these new dependencies for blog functionality
-
+      # Blog functionality
       {:makeup_elixir, ">= 0.0.0"},
       {:earmark, "~> 1.4"},
       {:makeup_erlang, ">= 0.0.0"},
 
-      {:con_cache, "~> 1.0"}  #typer mp optimizing redis like thing
+      # Cache
+      {:con_cache, "~> 1.0"}
     ]
   end
 
