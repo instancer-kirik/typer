@@ -1,6 +1,6 @@
 alias Typer.Game.Phrase
 alias Typer.Repo
-alias Typer.Accounts.User
+alias Typer.Acts.User
 
 # Create a dummy user for the phrases
 {:ok, dummy_user} = %User{}
@@ -131,7 +131,7 @@ phrases = [
     user_id: dummy_user.id
   },
   %{
-    text: "def handle_event(\"save\", %{\"user\" => user_params}, socket) do case Accounts.register_user(user_params) do {:ok, user} -> {:ok, _} = Accounts.deliver_user_confirmation_instructions( user, &url(~p\"/users/confirm/#{&1}\") ) changeset = Accounts.change_user_registration(user) {:noreply, socket |> assign(trigger_submit: true) |> assign_form(changeset)} {:error, %Ecto.Changeset{} = changeset} -> {:noreply, socket |> assign(check_errors: true) |> assign_form(changeset)} end end",
+    text: "def handle_event(\"save\", %{\"user\" => user_params}, socket) do case Acts.register_user(user_params) do {:ok, user} -> {:ok, _} = Acts.deliver_user_confirmation_instructions( user, &url(~p\"/users/confirm/#{&1}\") ) changeset = Acts.change_user_registration(user) {:noreply, socket |> assign(trigger_submit: true) |> assign_form(changeset)} {:error, %Ecto.Changeset{} = changeset} -> {:noreply, socket |> assign(check_errors: true) |> assign_form(changeset)} end end",
     user_id: dummy_user.id
   }
 ]

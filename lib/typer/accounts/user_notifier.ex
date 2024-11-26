@@ -1,4 +1,4 @@
-defmodule Typer.Accounts.UserNotifier do
+defmodule Typer.Acts.UserNotifier do
   import Swoosh.Email
 
   alias Typer.Mailer

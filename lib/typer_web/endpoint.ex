@@ -7,7 +7,7 @@ defmodule TyperWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_typer_key",
-    signing_salt: "DiKr+uKv",
+    signing_salt: "_CLvmXLvmXpMV1yHv+J+",
     same_site: "Lax"
   ]
 

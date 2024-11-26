@@ -25,7 +25,7 @@ config :typer, TyperWeb.Endpoint,
     layout: false
   ],
   pubsub_server: Typer.PubSub,
-  live_view: [signing_salt: "your_signing_salt"]
+  live_view: [signing_salt: "_CLvmXLvmXpMV1yHv+J+"]
 
 # Configures Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: Typer.Finch

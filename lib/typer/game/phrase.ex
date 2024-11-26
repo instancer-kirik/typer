@@ -1,7 +1,7 @@
 defmodule Typer.Game.Phrase do
   use Ecto.Schema
   import Ecto.Changeset
-  alias Typer.Accounts.User
+  alias Typer.Acts.User
   alias Typer.Blog.Post
 
   schema "phrases" do

@@ -33,23 +33,23 @@ defmodule Typer.MixProject do
   defp deps do
     [
       # Auth
-      {:accounts, in_umbrella: true},  # Add centralized auth
+      {:acts, in_umbrella: true},  # Add centralized auth
 
       {:pbkdf2_elixir, "~> 2.0"},
       {:phoenix, "~> 1.7.14"},
       {:phoenix_ecto, "~> 4.6.2"},
       {:ecto_sql, "~> 3.12.0"},
       {:postgrex, ">= 0.0.0"},
-      {:phoenix_html, "~> 3.3"},
-      {:phoenix_live_reload, "~> 1.5.3", only: :dev},
+      {:phoenix_html, "~> 4.1"},  # Updating to latest version
+      {:phoenix_live_reload, "~> 1.5", only: :dev},
       {:phoenix_live_view, "~> 0.20.17"},
       {:floki, "~> 0.36.0", only: :test},
-      {:phoenix_live_dashboard, "~> 0.8.4"},
+      {:phoenix_live_dashboard, "~> 0.8.5"},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
-      {:tailwind, "~> 0.2.3", runtime: Mix.env() == :dev},
+      {:tailwind, "~> 0.2.4", runtime: Mix.env() == :dev},
       {:swoosh, "~> 1.17.1"},
       {:finch, "~> 0.19.0"},
-      {:telemetry_metrics, "~> 0.6"},
+      {:telemetry_metrics, "~> 1.0"},  # Updating to latest version
       {:telemetry_poller, "~> 1.1.0"},
       {:gettext, "~> 0.26.1"},
       {:jason, "~> 1.4.4"},

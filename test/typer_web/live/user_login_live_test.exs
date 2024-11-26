@@ -2,7 +2,7 @@ defmodule TyperWeb.UserLoginLiveTest do
   use TyperWeb.ConnCase
 
   import Phoenix.LiveViewTest
-  import Typer.AccountsFixtures
+  import Typer.ActsFixtures
 
   describe "Log in page" do
     test "renders log in page", %{conn: conn} do

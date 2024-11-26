@@ -20,7 +20,7 @@ config :typer, TyperWeb.Endpoint,
     layout: false
   ],
   pubsub_server: Typer.PubSub,
-  live_view: [signing_salt: "fyWKTZnK"]
+  live_view: [signing_salt: "_CLvmXLvmXpMV1yHv+J+"]
 
 # Configures the mailer
 #

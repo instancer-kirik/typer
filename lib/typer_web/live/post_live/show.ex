@@ -3,10 +3,10 @@ defmodule TyperWeb.PostLive.Show do
 
   alias Typer.Blog
   alias Typer.Blog.Comment
-  alias Typer.Accounts.User
+  alias Typer.Acts.User
   alias Typer.Repo
   alias Typer.Game
-  alias Typer.Accounts
+  alias Typer.Acts
   alias Typer.Uploads
 
   @impl true
@@ -17,7 +17,7 @@ defmodule TyperWeb.PostLive.Show do
 
   defp get_current_user(session) do
     with user_token when not is_nil(user_token) <- session["user_token"],
-         user when not is_nil(user) <- Accounts.get_user_by_session_token(user_token) do
+         user when not is_nil(user) <- Acts.Auth.get_user_by_session_token(user_token) do
       user
     else
       _ -> nil

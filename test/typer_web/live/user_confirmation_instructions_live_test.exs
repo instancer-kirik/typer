@@ -2,9 +2,9 @@ defmodule TyperWeb.UserConfirmationInstructionsLiveTest do
   use TyperWeb.ConnCase
 
   import Phoenix.LiveViewTest
-  import Typer.AccountsFixtures
+  import Typer.ActsFixtures
 
-  alias Typer.Accounts
+  alias Typer.Acts
   alias Typer.Repo
 
   setup do
@@ -29,11 +29,11 @@ defmodule TyperWeb.UserConfirmationInstructionsLiveTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
                "If your email is in our system"
 
-      assert Repo.get_by!(Accounts.UserToken, user_id: user.id).context == "confirm"
+      assert Repo.get_by!(Acts.UserToken, user_id: user.id).context == "confirm"
     end
 
     test "does not send confirmation token if user is confirmed", %{conn: conn, user: user} do
-      Repo.update!(Accounts.User.confirm_changeset(user))
+      Repo.update!(Acts.User.confirm_changeset(user))
 
       {:ok, lv, _html} = live(conn, ~p"/users/confirm")
 
@@ -46,7 +46,7 @@ defmodule TyperWeb.UserConfirmationInstructionsLiveTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
                "If your email is in our system"
 
-      refute Repo.get_by(Accounts.UserToken, user_id: user.id)
+      refute Repo.get_by(Acts.UserToken, user_id: user.id)
     end
 
     test "does not send confirmation token if email is invalid", %{conn: conn} do
@@ -61,7 +61,7 @@ defmodule TyperWeb.UserConfirmationInstructionsLiveTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
                "If your email is in our system"
 
-      assert Repo.all(Accounts.UserToken) == []
+      assert Repo.all(Acts.UserToken) == []
     end
   end
 end

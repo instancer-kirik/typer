@@ -5,7 +5,7 @@ defmodule Typer.Blog.Comment do
   schema "comments" do
     field :content, :string
     belongs_to :post, Typer.Blog.Post, foreign_key: :post_slug, references: :slug, type: :string
-    belongs_to :user, Typer.Accounts.User
+    belongs_to :user, Typer.Acts.User
 
     timestamps(type: :utc_datetime)
   end

@@ -2,7 +2,7 @@ defmodule Typer.Blog do
   import Ecto.Query, warn: false
   alias Typer.Repo
   alias Typer.Blog.Post
-  alias Typer.Accounts.User
+  alias Typer.Acts.User
   alias Typer.Blog.Comment
   def list_posts do
     Repo.all(from p in Post, order_by: [desc: p.published_at])

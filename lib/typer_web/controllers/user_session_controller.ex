@@ -1,7 +1,7 @@
 defmodule TyperWeb.UserSessionController do
   use TyperWeb, :controller
 
-  alias Typer.Accounts
+  alias Typer.Acts
   alias TyperWeb.UserAuth
 
   def create(conn, %{"_action" => "registered"} = params) do
@@ -22,7 +22,7 @@ defmodule TyperWeb.UserSessionController do
     %{"email" => email, "password" => password} = user_params
     IO.puts("Attempting login for #{email}")
 
-    if user = Accounts.get_user_by_email_and_password(email, password) do
+    if user = Acts.get_user_by_email_and_password(email, password) do
       conn
       |> put_flash(:info, info)
       |> UserAuth.log_in_user(user, user_params)

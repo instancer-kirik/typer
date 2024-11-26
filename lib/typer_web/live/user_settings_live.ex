@@ -1,7 +1,7 @@
 defmodule TyperWeb.UserSettingsLive do
   use TyperWeb, :live_view
 
-  alias Typer.Accounts
+  alias Typer.Acts
 
   def render(assigns) do
     ~H"""
@@ -97,7 +97,7 @@ defmodule TyperWeb.UserSettingsLive do
 
   def mount(%{"token" => token}, _session, socket) do
     socket =
-      case Accounts.update_user_email(socket.assigns.current_user, token) do
+      case Acts.update_user_email(socket.assigns.current_user, token) do
         :ok ->
           put_flash(socket, :info, "Email changed successfully.")
         :error ->
@@ -113,9 +113,9 @@ defmodule TyperWeb.UserSettingsLive do
     socket =
       socket
       |> assign(:page_title, "Account Settings")
-      |> assign(:email_form, to_form(Accounts.change_user_email(user, %{current_password: ""})))
-      |> assign(:password_form, to_form(Accounts.change_user_password(user, %{current_password: ""})))
-      |> assign(:username_form, to_form(Accounts.change_user_username(user, %{current_password: ""})))
+      |> assign(:email_form, to_form(Acts.change_user_email(user, %{current_password: ""})))
+      |> assign(:password_form, to_form(Acts.change_user_password(user, %{current_password: ""})))
+      |> assign(:username_form, to_form(Acts.change_user_username(user, %{current_password: ""})))
       |> assign(:trigger_submit, false)
       |> assign(:current_email, user.email)
 
@@ -125,9 +125,9 @@ defmodule TyperWeb.UserSettingsLive do
   def handle_event("validate_" <> field, %{"user" => params}, socket) do
     changeset =
       case field do
-        "email" -> Accounts.change_user_email(socket.assigns.current_user, params)
-        "password" -> Accounts.change_user_password(socket.assigns.current_user, params)
-        "username" -> Accounts.change_user_username(socket.assigns.current_user, params)
+        "email" -> Acts.change_user_email(socket.assigns.current_user, params)
+        "password" -> Acts.change_user_password(socket.assigns.current_user, params)
+        "username" -> Acts.change_user_username(socket.assigns.current_user, params)
       end
       |> Map.put(:action, :validate)
 
@@ -137,16 +137,16 @@ defmodule TyperWeb.UserSettingsLive do
   def handle_event("update_email", %{"user" => user_params}, socket) do
     user = socket.assigns.current_user
 
-    case Accounts.apply_user_email(user, user_params["current_password"], user_params) do
+    case Acts.apply_user_email(user, user_params["current_password"], user_params) do
       {:ok, applied_user} ->
-        Accounts.deliver_user_update_email_instructions(
+        Acts.deliver_user_update_email_instructions(
           applied_user,
           user.email,
           &url(~p"/users/settings/confirm_email/#{&1}")
         )
 
         info = "A link to confirm your email change has been sent to the new address."
-        {:noreply, socket |> put_flash(:info, info) |> assign(email_form: to_form(Accounts.change_user_email(user, %{current_password: ""})))}
+        {:noreply, socket |> put_flash(:info, info) |> assign(email_form: to_form(Acts.change_user_email(user, %{current_password: ""})))}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :email_form, to_form(Map.put(changeset, :action, :insert)))}
@@ -156,11 +156,11 @@ defmodule TyperWeb.UserSettingsLive do
   def handle_event("update_password", %{"current_password" => password, "user" => user_params}, socket) do
     user = socket.assigns.current_user
 
-    case Accounts.update_user_password(user, password, user_params) do
+    case Acts.update_user_password(user, password, user_params) do
       {:ok, user} ->
         password_form =
           user
-          |> Accounts.change_user_password(user_params)
+          |> Acts.change_user_password(user_params)
           |> to_form()
 
         {:noreply, assign(socket, trigger_submit: true, password_form: password_form)}
@@ -173,10 +173,10 @@ defmodule TyperWeb.UserSettingsLive do
   def handle_event("update_username", %{"current_password" => password, "user" => user_params}, socket) do
     user = socket.assigns.current_user
 
-    case Accounts.update_user_username(user, password, user_params) do
+    case Acts.update_user_username(user, password, user_params) do
       {:ok, user} ->
         info = "Username updated successfully."
-        changeset = Accounts.change_user_username(user)
+        changeset = Acts.change_user_username(user)
         {:noreply,
          socket
          |> put_flash(:info, info)

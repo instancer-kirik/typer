@@ -4,7 +4,7 @@ defmodule TyperWeb.UserAuth do
   import Plug.Conn
   import Phoenix.Controller
 
-  alias Typer.Accounts
+  alias Typer.Acts
 
   # Make the remember me cookie valid for 60 days.
   # If you want bump or reduce this value, also change
@@ -13,27 +13,27 @@ defmodule TyperWeb.UserAuth do
   @remember_me_cookie "_typer_web_user_remember_me"
   @remember_me_options [sign: true, max_age: @max_age, same_site: "Lax"]
 
-  defdelegate log_in_user(conn, user, params \\ %{}), to: Accounts.Auth
-  defdelegate log_out_user(conn), to: Accounts.Auth
-  defdelegate fetch_current_user(conn, _opts), to: Accounts.Auth
-  defdelegate redirect_if_user_is_authenticated(conn, _opts), to: Accounts.Auth
-  defdelegate require_authenticated_user(conn, _opts), to: Accounts.Auth
-  defdelegate require_confirmed_user(conn, _opts), to: Accounts.Auth
+  defdelegate log_in_user(conn, user, params \\ %{}), to: Acts.Auth
+  defdelegate log_out_user(conn), to: Acts.Auth
+  defdelegate fetch_current_user(conn, _opts), to: Acts.Auth
+  defdelegate redirect_if_user_is_authenticated(conn, _opts), to: Acts.Auth
+  defdelegate require_authenticated_user(conn, _opts), to: Acts.Auth
+  defdelegate require_confirmed_user(conn, _opts), to: Acts.Auth
 
   def on_mount(:mount_current_user, params, session, socket) do
-    Accounts.Auth.on_mount(:mount_current_user, params, session, socket)
+    Acts.Auth.on_mount(:mount_current_user, params, session, socket)
   end
 
   def on_mount(:ensure_authenticated, params, session, socket) do
-    Accounts.Auth.on_mount(:ensure_authenticated, params, session, socket)
+    Acts.Auth.on_mount(:ensure_authenticated, params, session, socket)
   end
 
   def on_mount(:redirect_if_user_is_authenticated, params, session, socket) do
-    Accounts.Auth.on_mount(:redirect_if_user_is_authenticated, params, session, socket)
+    Acts.Auth.on_mount(:redirect_if_user_is_authenticated, params, session, socket)
   end
 
   def on_mount(:ensure_confirmed_user, params, session, socket) do
-    Accounts.Auth.on_mount(:ensure_confirmed_user, params, session, socket)
+    Acts.Auth.on_mount(:ensure_confirmed_user, params, session, socket)
   end
 
   @doc """

@@ -47,7 +47,7 @@ defmodule TyperWeb.HashSlingingHasherLive do
   end
   @impl true
 def mount(_params, session, socket) do
-    current_user = Typer.Accounts.get_user_from_session(session) || nil
+    current_user = Typer.Acts.get_user_from_session(session) || nil
     accepted_cookies = Map.get(session, "accepted_cookies", false)
     csrf_token = Plug.CSRFProtection.get_csrf_token()
     dark_mode = session[:dark_mode] || true

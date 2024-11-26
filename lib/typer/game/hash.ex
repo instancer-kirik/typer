@@ -1,7 +1,7 @@
 defmodule Typer.Game.Hash do
   use Ecto.Schema
   import Ecto.Changeset
-  alias Typer.Accounts.User
+  alias Typer.Acts.User
   schema "hashes" do
     field :app_title, :string
     field :hash, :string
