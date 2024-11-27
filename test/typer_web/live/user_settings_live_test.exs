@@ -1,9 +1,9 @@
 defmodule TyperWeb.UserSettingsLiveTest do
   use TyperWeb.ConnCase
 
-  alias Typer.Accounts
+  alias Typer.Acts
   import Phoenix.LiveViewTest
-  import Typer.AccountsFixtures
+  import Typer.ActsFixtures
 
   describe "Settings page" do
     test "renders settings page", %{conn: conn} do

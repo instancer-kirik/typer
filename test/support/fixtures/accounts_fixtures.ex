@@ -1,7 +1,7 @@
-defmodule Typer.AccountsFixtures do
+defmodule Typer.ActsFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Typer.Accounts` context.
+  entities via the `Typer.Acts` context.
   """
 
   def unique_user_email, do: "user#{System.unique_integer()}@example.com"
@@ -20,7 +20,7 @@ defmodule Typer.AccountsFixtures do
     {:ok, user} =
       attrs
       |> valid_user_attributes()
-      |> Typer.Accounts.register_user()
+      |> Typer.Acts.register_user()
 
     user
   end

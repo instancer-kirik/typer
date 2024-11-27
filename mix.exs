@@ -40,7 +40,7 @@ defmodule Typer.MixProject do
       {:phoenix_ecto, "~> 4.6.2"},
       {:ecto_sql, "~> 3.12.0"},
       {:postgrex, ">= 0.0.0"},
-      {:phoenix_html, "~> 3.3"},
+      {:phoenix_html, "~> 4.1"},  # Updating to latest version
       {:phoenix_live_reload, "~> 1.5.3", only: :dev},
       {:phoenix_live_view, "~> 0.20.17"},
       {:floki, "~> 0.36.0", only: :test},
@@ -49,7 +49,7 @@ defmodule Typer.MixProject do
       {:tailwind, "~> 0.2.3", runtime: Mix.env() == :dev},
       {:swoosh, "~> 1.17.1"},
       {:finch, "~> 0.19.0"},
-      {:telemetry_metrics, "~> 0.6"},
+      {:telemetry_metrics, "~> 1.0"},  # Updating to latest version
       {:telemetry_poller, "~> 1.1.0"},
       {:gettext, "~> 0.26.1"},
       {:jason, "~> 1.4.4"},

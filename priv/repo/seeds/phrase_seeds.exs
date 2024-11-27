@@ -1,6 +1,6 @@
 alias Typer.Game.Phrase
 alias Typer.Repo
-alias Typer.Accounts.User
+alias Typer.Acts.User
 
 # Create a dummy user for the phrases
 {:ok, dummy_user} = %User{}

@@ -1,7 +1,7 @@
 defmodule TyperWeb.UserSessionControllerTest do
   use TyperWeb.ConnCase, async: true
 
-  import Typer.AccountsFixtures
+  import Typer.ActsFixtures
 
   setup do
     %{user: user_fixture()}

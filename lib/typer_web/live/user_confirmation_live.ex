@@ -1,7 +1,7 @@
 defmodule TyperWeb.UserConfirmationLive do
   use TyperWeb, :live_view
 
-  alias Typer.Accounts
+  alias Typer.Acts
 
   def render(%{live_action: :edit} = assigns) do
     ~H"""

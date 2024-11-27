@@ -2,7 +2,7 @@ defmodule TyperWeb.UserRegistrationLiveTest do
   use TyperWeb.ConnCase
 
   import Phoenix.LiveViewTest
-  import Typer.AccountsFixtures
+  import Typer.ActsFixtures
 
   describe "Registration page" do
     test "renders registration page", %{conn: conn} do

@@ -1,7 +1,7 @@
 defmodule TyperWeb.UserForgotPasswordLive do
   use TyperWeb, :live_view
 
-  alias Typer.Accounts
+  alias Typer.Acts
 
   def render(assigns) do
     ~H"""

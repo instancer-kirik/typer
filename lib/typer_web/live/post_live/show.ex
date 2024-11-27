@@ -3,10 +3,10 @@ defmodule TyperWeb.PostLive.Show do
 
   alias Typer.Blog
   alias Typer.Blog.Comment
-  alias Typer.Accounts.User
+  alias Typer.Acts.User
   alias Typer.Repo
   alias Typer.Game
-  alias Typer.Accounts
+  alias Typer.Acts
   alias Typer.Uploads
 
   @impl true

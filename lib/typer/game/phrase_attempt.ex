@@ -3,7 +3,7 @@
 defmodule Typer.Game.PhraseAttempt do
   use Ecto.Schema
   import Ecto.Changeset
-  alias Typer.Accounts.User
+  alias Typer.Acts.User
   alias Typer.Game.Phrase
 
   schema "phrase_attempts" do

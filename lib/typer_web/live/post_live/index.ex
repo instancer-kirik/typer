@@ -128,7 +128,7 @@ defmodule TyperWeb.PostLive.Index do
 
   defp get_current_user(session) do
     with user_token when not is_nil(user_token) <- session["user_token"],
-         user when not is_nil(user) <- Typer.Accounts.get_user_by_session_token(user_token) do
+         user when not is_nil(user) <- Typer.Acts.get_user_by_session_token(user_token) do
       user
     else
       _ -> nil

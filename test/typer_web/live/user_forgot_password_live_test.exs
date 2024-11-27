@@ -2,9 +2,9 @@ defmodule TyperWeb.UserForgotPasswordLiveTest do
   use TyperWeb.ConnCase
 
   import Phoenix.LiveViewTest
-  import Typer.AccountsFixtures
+  import Typer.ActsFixtures
 
-  alias Typer.Accounts
+  alias Typer.Acts
   alias Typer.Repo
 
   describe "Forgot password page" do

@@ -3,7 +3,7 @@ defmodule TyperWeb.Router do
   import Phoenix.LiveView.Router
   import Plug.BasicAuth
   import Phoenix.Controller
-  import Accounts.Auth
+  import Acts.Auth
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -12,7 +12,7 @@ defmodule TyperWeb.Router do
     plug :put_root_layout, html: {TyperWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-    plug Accounts.FetchCurrentUserPlug
+    plug :fetch_current_user
   end
 
   pipeline :api do
@@ -24,11 +24,15 @@ defmodule TyperWeb.Router do
   end
 
   pipeline :authenticated do
-    plug Accounts.EnsureAuthenticatedPlug
+    plug :require_authenticated_user
   end
 
   pipeline :ensure_confirmed_user do
-    plug Accounts.EnsureConfirmedUserPlug
+    plug :require_confirmed_user
+  end
+
+  pipeline :redirect_auth do
+    plug :redirect_if_user_is_authenticated
   end
 
   scope "/", TyperWeb do
@@ -57,10 +61,10 @@ defmodule TyperWeb.Router do
   scope "/", TyperWeb do
     pipe_through [:browser, :authenticated, :ensure_confirmed_user]
 
-    live "/users/settings", UserSettingsLive, :edit
-    live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
-    live "/users/confirm/:token", UserConfirmationLive, :edit
-    live "/users/confirm", UserConfirmationInstructionsLive, :new
+    live "/users/settings", Acts.UserSettingsLive, :edit
+    live "/users/settings/confirm_email/:token", Acts.UserSettingsLive, :confirm_email
+    live "/users/confirm/:token", Acts.UserConfirmationLive, :edit
+    live "/users/confirm", Acts.UserConfirmationInstructionsLive, :new
     live "/home", HomeLive, :index
     live "/hash_slinging_hasher", HashSlingingHasherLive, :index
   end
@@ -72,7 +76,7 @@ defmodule TyperWeb.Router do
     live "/dashboard", AdminDashboardLive
   end
 
-  # Routes meant to be used within the Ves platform
+  # Routes meant to be used within the Veix platform
   scope "/" do
     pipe_through [:browser, :authenticated]
 
@@ -84,7 +88,7 @@ defmodule TyperWeb.Router do
     live "/stats", TyperWeb.StatsLive
   end
 
-  # Routes when accessed directly (not through Ves)
+  # Routes when accessed directly (not through Veix)
   scope "/typer" do
     pipe_through [:browser, :authenticated]
 
@@ -109,20 +113,20 @@ defmodule TyperWeb.Router do
   scope "/", TyperWeb do
     pipe_through [:browser]
 
-    delete "/users/log_out", UserSessionController, :delete
+    delete "/users/log_out", Acts.UserSessionController, :delete
   end
 
   scope "/", TyperWeb do
-    pipe_through [:browser, :redirect_if_user_is_authenticated]
+    pipe_through [:browser, :redirect_auth]
 
-    live_session :redirect_if_user_is_authenticated,
-      on_mount: [{TyperWeb.UserAuth, :redirect_if_user_is_authenticated}] do
-      live "/users/register", UserRegistrationLive, :new
-      live "/users/log_in", UserLoginLive, :new
-      live "/users/reset_password", UserForgotPasswordLive, :new
-      live "/users/reset_password/:token", UserResetPasswordLive, :edit
+    live_session :redirect_auth,
+      on_mount: [{Acts.UserAuth, :redirect_if_user_is_authenticated}] do
+      live "/users/register", Acts.UserRegistrationLive, :new
+      live "/users/log_in", Acts.UserLoginLive, :new
+      live "/users/reset_password", Acts.UserForgotPasswordLive, :new
+      live "/users/reset_password/:token", Acts.UserResetPasswordLive, :edit
     end
 
-    post "/users/log_in", UserSessionController, :create
+    post "/users/log_in", Acts.UserSessionController, :create
   end
 end

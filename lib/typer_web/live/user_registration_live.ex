@@ -1,8 +1,8 @@
 defmodule TyperWeb.UserRegistrationLive do
   use TyperWeb, :live_view
 
-  alias Typer.Accounts
-  alias Typer.Accounts.User
+  alias Typer.Acts
+  alias Typer.Acts.User
 
   def render(assigns) do
     ~H"""

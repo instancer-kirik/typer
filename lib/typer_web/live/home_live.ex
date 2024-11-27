@@ -91,7 +91,7 @@ defmodule TyperWeb.HomeLive do
     def mount(_params, session, socket) do
       csrf_token = Plug.CSRFProtection.get_csrf_token()
       dark_mode = session["dark_mode"] || false
-      current_user = Typer.Accounts.get_user_from_session(session)
+      current_user = Typer.Acts.get_user_from_session(session)
 
       IO.inspect(current_user, label: "AAAA")
       new_user = Map.get(session, "accepted_cookies", false)

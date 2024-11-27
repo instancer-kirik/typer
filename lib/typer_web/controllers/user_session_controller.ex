@@ -1,7 +1,7 @@
 defmodule TyperWeb.UserSessionController do
   use TyperWeb, :controller
 
-  alias Typer.Accounts
+  alias Typer.Acts
   alias TyperWeb.UserAuth
 
   def create(conn, %{"_action" => "registered"} = params) do

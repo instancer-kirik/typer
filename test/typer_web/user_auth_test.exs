@@ -2,9 +2,9 @@ defmodule TyperWeb.UserAuthTest do
   use TyperWeb.ConnCase, async: true
 
   alias Phoenix.LiveView
-  alias Typer.Accounts
+  alias Typer.Acts
   alias TyperWeb.UserAuth
-  import Typer.AccountsFixtures
+  import Typer.ActsFixtures
 
   @remember_me_cookie "_typer_web_user_remember_me"
 

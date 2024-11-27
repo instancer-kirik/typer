@@ -1,7 +1,7 @@
-defmodule Typer.Accounts.UserToken do
+defmodule Typer.Acts.UserToken do
   use Ecto.Schema
   import Ecto.Query
-  alias Typer.Accounts.UserToken
+  alias Typer.Acts.UserToken
 
   @hash_algorithm :sha256
   @rand_size 32
@@ -17,7 +17,7 @@ defmodule Typer.Accounts.UserToken do
     field :token, :binary
     field :context, :string
     field :sent_to, :string
-    belongs_to :user, Typer.Accounts.User
+    belongs_to :user, Typer.Acts.User
 
     timestamps(updated_at: false)
   end

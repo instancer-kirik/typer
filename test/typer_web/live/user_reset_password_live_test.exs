@@ -2,9 +2,9 @@ defmodule TyperWeb.UserResetPasswordLiveTest do
   use TyperWeb.ConnCase
 
   import Phoenix.LiveViewTest
-  import Typer.AccountsFixtures
+  import Typer.ActsFixtures
 
-  alias Typer.Accounts
+  alias Typer.Acts
 
   setup do
     user = user_fixture()

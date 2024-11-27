@@ -114,7 +114,7 @@ defmodule TyperWeb.PhraseLive do
 
   def fetch_current_user_for_liveview(session) do
     user_token = Map.get(session, "user_token")
-    user = user_token && Typer.Accounts.get_user_by_session_token(user_token)
+    user = user_token && Typer.Acts.get_user_by_session_token(user_token)
 
     # Ensure a default user structure if not found; adjust according to your application needs
     user || %{}

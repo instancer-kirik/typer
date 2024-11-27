@@ -10,7 +10,6 @@ config :typer, Typer.Repo,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
-
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
@@ -20,8 +19,8 @@ config :typer, Typer.Repo,
 config :typer, TyperWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.was 127, 0, 0, 1
-  http: [ip: {0, 0, 0, 0}, port: 4000],
-  check_origin: ["//localhost", "//127.0.0.1"],
+  http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("TYPER_PORT", "4002"))],
+  check_origin: false,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "QKU2TK3DLu8KoNS5adlREhpTteG+FJB9KMX2EVPLyhDjfKft4d1YidQfLFxxCoek",

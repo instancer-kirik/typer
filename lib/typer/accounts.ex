@@ -1,4 +1,4 @@
-defmodule Typer.Accounts do
+defmodule Typer.Acts do
   @moduledoc """
   The Accounts context.
   """
@@ -6,7 +6,7 @@ defmodule Typer.Accounts do
   import Ecto.Query, warn: false
   alias Typer.Repo
 
-  alias Typer.Accounts.{User, UserToken, UserNotifier}
+  alias Typer.Acts.{User, UserToken, UserNotifier}
 
   def update_user_preferences(%User{} = user, attrs) do
     user
@@ -17,21 +17,21 @@ defmodule Typer.Accounts do
   def get_user_vault_path(user) do
     user.preferences["vault_path"]
   end
-  def toggle_show_elixir(%Typer.Accounts.User{preferences: preferences} = user) when is_map(preferences) do
+  def toggle_show_elixir(%Typer.Acts.User{preferences: preferences} = user) when is_map(preferences) do
     new_preferences =
       preferences
       |> Map.update("show_elixir", not Map.get(preferences, "show_elixir", true), &not &1)
-    Typer.Accounts.update_user_preferences(user, new_preferences)
+    Typer.Acts.update_user_preferences(user, new_preferences)
   end
 
-  def toggle_show_elixir(%Typer.Accounts.User{} = user) do
+  def toggle_show_elixir(%Typer.Acts.User{} = user) do
     new_preferences = %{"show_elixir" => false} # Default new preferences if none exist
-    Typer.Accounts.update_user_preferences(user, new_preferences)
+    Typer.Acts.update_user_preferences(user, new_preferences)
   end
 
-  def update_user_preferences(%Typer.Accounts.User{} = user, new_preferences) do
+  def update_user_preferences(%Typer.Acts.User{} = user, new_preferences) do
     user
-    |> Typer.Accounts.User.changeset(%{preferences: new_preferences})
+    |> Typer.Acts.User.changeset(%{preferences: new_preferences})
     |> Typer.Repo.update()
   end
 
