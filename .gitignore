@@ -56,4 +56,6 @@ build/
 public/
 
 # Log files
-*.log
+*.log_build/
+deps/
+.elixir_ls/
